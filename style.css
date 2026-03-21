@@ -329,6 +329,43 @@ html, body {
 }
 
 /* ── Responsive ── */
+/* ── Mode Switcher ── */
+.mode-switcher {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+.btn-mode {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.77rem;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.25s, border-color 0.25s, box-shadow 0.25s, color 0.25s, transform 0.15s;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+.btn-mode:hover {
+  background: rgba(180,77,255,0.10);
+  border-color: var(--mids);
+  color: var(--mids);
+  transform: translateY(-1px);
+}
+.btn-mode.active {
+  background: rgba(180,77,255,0.18);
+  border-color: var(--mids);
+  color: #fff;
+  box-shadow: 0 0 16px var(--mids-glow);
+  transform: translateY(-1px);
+}
+
 /* ── Drop Detection Flash ── */
 #dropFlash {
   position: fixed;

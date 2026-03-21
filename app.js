@@ -237,8 +237,9 @@ class AudioEngine {
     return computeRMS(this._timeData);
   }
 
-  get sampleRate() { return this.ctx ? this.ctx.sampleRate : 44100; }
-  get binCount()   { return this.analyser ? this.analyser.frequencyBinCount : 0; }
+  get sampleRate()     { return this.ctx ? this.ctx.sampleRate : 44100; }
+  get binCount()       { return this.analyser ? this.analyser.frequencyBinCount : 0; }
+  get timeDomainData() { return this._timeData; }  // already current after getRMS()
 }
 
 /* ─────────────────────────────────────────────
@@ -375,6 +376,7 @@ class Visualizer {
     this._bassAvg  = 0;   // smoothed bass
     this._trebleAvg = 0;  // smoothed treble
 
+    this._mode          = 'bars'; // 'bars' | 'wave' | 'circular' | 'lissajous'
     this._dropDetector = new DropDetector();
 
     this._initResize();
@@ -413,6 +415,16 @@ class Visualizer {
     if (this._rafId) cancelAnimationFrame(this._rafId);
     this._rafId = null;
     this._clear();
+  }
+
+  setMode(mode) {
+    this._mode = mode;
+    // Reset state so old mode's data doesn't bleed into the new rendering
+    this.smoothed.fill(0);
+    this.peaks.fill(0);
+    this.peakVels.fill(0);
+    this.peakHold.fill(0);
+    this.particles = [];
   }
 
   _loop() {
@@ -495,105 +507,273 @@ class Visualizer {
       this.smoothed[i] = lerp(this.smoothed[i], targets[i], LERP_SPEED);
     }
 
-    /* ── Draw symmetric bars ── */
+    /* ── Mode dispatch ── */
     const totalBars = this.barCount * 2;
     const gap       = 2;
     const barW      = Math.max(1, (W - gap * (totalBars - 1)) / totalBars);
-    const baseY     = H * 0.88;   // baseline
+    const baseY     = H * 0.88;
     const maxBarH   = H * 0.80;
-
-    // Dynamic glow intensity from RMS
     const glowFactor = clamp(this._rms * 10, 0, 1);
 
-    for (let i = 0; i < this.barCount; i++) {
-      const val  = this.smoothed[i];
-      const barH = val * maxBarH;
-
-      // Mirror: left side goes i from center outward, right side mirrors
-      const leftIdx  = this.barCount - 1 - i;   // right to left
-      const rightIdx = this.barCount + i;        // left to right
-
-      const xLeft  = leftIdx  * (barW + gap);
-      const xRight = rightIdx * (barW + gap);
-      const y      = baseY - barH;
-
-      // Color gradient per frequency
-      const hue      = remap(i, 0, this.barCount - 1, 330, 180); // pink → cyan
-      const glowColor = `hsl(${hue},100%,70%)`;
-
-      // Only draw if bar has height and coordinates are finite
-      if (barH > 0.5 && isFinite(y) && isFinite(xLeft) && isFinite(xRight)) {
-        ctx.save();
-        ctx.shadowBlur  = 8 + glowFactor * 24 + val * 16;
-        ctx.shadowColor = glowColor;
-
-        // Gradient fill — y and baseY are guaranteed different when barH > 0.5
-        const grad = ctx.createLinearGradient(0, y, 0, baseY);
-        grad.addColorStop(0,   `hsl(${hue},100%,${clamp(70 + val*20, 0, 100)}%)`);
-        grad.addColorStop(0.4, `hsl(${hue},90%,50%)`);
-        grad.addColorStop(1,   `hsl(${hue},70%,20%)`);
-
-        const radius = Math.min(barW / 2, 4);
-
-        this._roundRect(ctx, xLeft,  y, barW, barH, radius);
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        this._roundRect(ctx, xRight, y, barW, barH, radius);
-        ctx.fill();
-
-        ctx.restore();
-      }
-
-      /* ── Peak caps ── */
-      const now = performance.now();
-      // Update peaks
-      if (barH > this.peaks[i]) {
-        this.peaks[i]    = barH;
-        this.peakHold[i] = now;
-        this.peakVels[i] = 0;
-      } else if (now - this.peakHold[i] > PEAK_HOLD_MS) {
-        this.peakVels[i] = Math.min(this.peakVels[i] + PEAK_GRAVITY, 18);
-        this.peaks[i]    = Math.max(0, this.peaks[i] - this.peakVels[i]);
-      }
-
-      const capY = baseY - this.peaks[i] - 3;
-      if (this.peaks[i] > 2 && isFinite(capY) && isFinite(xLeft) && isFinite(xRight)) {
-        ctx.save();
-        ctx.shadowBlur  = 10 + glowFactor * 12;
-        ctx.shadowColor = glowColor;
-        ctx.fillStyle   = `hsl(${hue}, 100%, 82%)`;
-        ctx.fillRect(xLeft,  capY, barW, 2);
-        ctx.fillRect(xRight, capY, barW, 2);
-        ctx.restore();
-      }
-
-      /* ── Treble particles ── */
-      if (this._trebleAvg > 0.35 && val > 0.72 && Math.random() < 0.12) {
-        const px = xRight + barW / 2;
-        const py = y;
-        this.particles.push(new Particle(px, py, glowColor));
-        // Mirror particle
-        const px2 = xLeft + barW / 2;
-        this.particles.push(new Particle(px2, py, glowColor));
-      }
+    switch (this._mode) {
+      case 'bars':     this._drawBars(W, H, ctx, barW, baseY, maxBarH, glowFactor); break;
+      case 'wave':     this._drawWaveform(W, H, ctx, glowFactor); break;
+      case 'circular': this._drawCircular(W, H, ctx, glowFactor); break;
+      case 'lissajous':this._drawLissajous(W, H, ctx, glowFactor); break;
     }
 
-    /* ── Update & draw particles ── */
+    /* ── Update & draw particles (all modes — drop explosions work everywhere) ── */
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.update();
       if (p.dead) { this.particles.splice(i, 1); }
       else { p.draw(ctx); }
     }
+  }
 
-    /* ── Center line (decorative) ── */
+  /* ─────────────────────────── MODE: BARS ─────────────────────────── */
+  _drawBars(W, H, ctx, barW, baseY, maxBarH, glowFactor) {
+    const gap = 2;
+    for (let i = 0; i < this.barCount; i++) {
+      const val  = this.smoothed[i];
+      const barH = val * maxBarH;
+      const leftIdx  = this.barCount - 1 - i;
+      const rightIdx = this.barCount + i;
+      const xLeft  = leftIdx  * (barW + gap);
+      const xRight = rightIdx * (barW + gap);
+      const y      = baseY - barH;
+      const hue       = remap(i, 0, this.barCount - 1, 330, 180);
+      const glowColor = `hsl(${hue},100%,70%)`;
+
+      if (barH > 0.5 && isFinite(y) && isFinite(xLeft) && isFinite(xRight)) {
+        ctx.save();
+        ctx.shadowBlur  = 8 + glowFactor * 24 + val * 16;
+        ctx.shadowColor = glowColor;
+        const grad = ctx.createLinearGradient(0, y, 0, baseY);
+        grad.addColorStop(0,   `hsl(${hue},100%,${clamp(70 + val * 20, 0, 100)}%)`);
+        grad.addColorStop(0.4, `hsl(${hue},90%,50%)`);
+        grad.addColorStop(1,   `hsl(${hue},70%,20%)`);
+        const radius = Math.min(barW / 2, 4);
+        this._roundRect(ctx, xLeft,  y, barW, barH, radius);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        this._roundRect(ctx, xRight, y, barW, barH, radius);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      const now = performance.now();
+      if (barH > this.peaks[i]) {
+        this.peaks[i] = barH; this.peakHold[i] = now; this.peakVels[i] = 0;
+      } else if (now - this.peakHold[i] > PEAK_HOLD_MS) {
+        this.peakVels[i] = Math.min(this.peakVels[i] + PEAK_GRAVITY, 18);
+        this.peaks[i]    = Math.max(0, this.peaks[i] - this.peakVels[i]);
+      }
+      const capY = baseY - this.peaks[i] - 3;
+      if (this.peaks[i] > 2 && isFinite(capY)) {
+        ctx.save();
+        ctx.shadowBlur = 10 + glowFactor * 12;
+        ctx.shadowColor = glowColor;
+        ctx.fillStyle  = `hsl(${hue},100%,82%)`;
+        ctx.fillRect(xLeft,  capY, barW, 2);
+        ctx.fillRect(xRight, capY, barW, 2);
+        ctx.restore();
+      }
+
+      if (this._trebleAvg > 0.35 && val > 0.72 && Math.random() < 0.12) {
+        this.particles.push(new Particle(xRight + barW / 2, y, glowColor));
+        this.particles.push(new Particle(xLeft  + barW / 2, y, glowColor));
+      }
+    }
+
+    // Baseline
     ctx.save();
     ctx.globalAlpha = 0.12 + glowFactor * 0.08;
     ctx.strokeStyle = '#fff';
     ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.moveTo(0, baseY + 1); ctx.lineTo(W, baseY + 1);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ────────────────────────── MODE: WAVEFORM ──────────────────────── */
+  _drawWaveform(W, H, ctx, glowFactor) {
+    const td = this.engine.timeDomainData;
+    if (!td || td.length === 0) return;
+
+    const baseY  = H * 0.5;
+    const scaleY = H * 0.40;
+    const step   = W / (td.length - 1);
+
+    // Horizontal center line
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, baseY); ctx.lineTo(W, baseY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Glow pass (wide, blurred)
+    const hGrad = ctx.createLinearGradient(0, 0, W, 0);
+    hGrad.addColorStop(0,    '#ff2d6b');
+    hGrad.addColorStop(0.33, '#b44dff');
+    hGrad.addColorStop(0.66, '#7c3bff');
+    hGrad.addColorStop(1,    '#00e5ff');
+
+    const drawLine = (alpha, blur, lineW) => {
+      ctx.save();
+      ctx.globalAlpha  = alpha;
+      ctx.shadowBlur   = blur;
+      ctx.shadowColor  = `rgba(180,77,255,0.9)`;
+      ctx.lineWidth    = lineW;
+      ctx.lineCap      = 'round';
+      ctx.lineJoin     = 'round';
+      ctx.strokeStyle  = hGrad;
+      ctx.beginPath();
+      for (let i = 0; i < td.length; i++) {
+        const x = i * step;
+        const y = baseY + td[i] * scaleY;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    drawLine(0.25 + glowFactor * 0.2, 18 + glowFactor * 20, 6);
+    drawLine(1.0,                      8 + glowFactor * 12,  2);
+
+    // Soft mirror reflection below
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.shadowBlur  = 6;
+    ctx.shadowColor = '#7c3bff';
+    ctx.lineWidth   = 1.5;
+    ctx.lineJoin    = 'round';
+    ctx.strokeStyle = hGrad;
+    ctx.beginPath();
+    const reflectY = H * 0.88;
+    for (let i = 0; i < td.length; i++) {
+      const x = i * step;
+      const y = reflectY - td[i] * H * 0.06;  // subtle shallow reflection
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ─────────────────────────── MODE: CIRCULAR ─────────────────────── */
+  _drawCircular(W, H, ctx, glowFactor) {
+    const cx      = W / 2;
+    const cy      = H * 0.48;
+    const minDim  = Math.min(W, H);
+    const innerR  = minDim * 0.16;
+    const maxLen  = minDim * 0.34;
+    const total   = this.barCount * 2; // full 360° using both mirror halves
+
+    for (let i = 0; i < this.barCount; i++) {
+      const val    = this.smoothed[i];
+      const barLen = val * maxLen;
+      if (barLen < 0.5) continue;
+
+      const hue       = remap(i, 0, this.barCount - 1, 330, 180);
+      const glowColor = `hsl(${hue},100%,70%)`;
+      const lineW     = Math.max(1.5, 2.5 - (i / this.barCount) * 1.2);
+
+      for (let side = 0; side < 2; side++) {
+        const idx   = side === 0 ? i : (this.barCount * 2 - 1 - i);
+        const angle = (idx / total) * Math.PI * 2 - Math.PI / 2;
+        const x1 = cx + Math.cos(angle) * innerR;
+        const y1 = cy + Math.sin(angle) * innerR;
+        const x2 = cx + Math.cos(angle) * (innerR + barLen);
+        const y2 = cy + Math.sin(angle) * (innerR + barLen);
+
+        ctx.save();
+        ctx.shadowBlur  = 6 + glowFactor * 16 + val * 10;
+        ctx.shadowColor = glowColor;
+        ctx.strokeStyle = `hsl(${hue},90%,62%)`;
+        ctx.lineWidth   = lineW;
+        ctx.lineCap     = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Inner glowing core circle
+    ctx.save();
+    const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
+    coreGrad.addColorStop(0,   `rgba(180,77,255,${0.35 + glowFactor * 0.45})`);
+    coreGrad.addColorStop(0.6, `rgba(124,59,255,${0.12 + glowFactor * 0.15})`);
+    coreGrad.addColorStop(1,   'rgba(124,59,255,0.02)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    ctx.fillStyle = coreGrad;
+    ctx.fill();
+    // Ring stroke
+    ctx.shadowBlur  = 12 + glowFactor * 18;
+    ctx.shadowColor = '#b44dff';
+    ctx.strokeStyle = `rgba(180,77,255,${0.4 + glowFactor * 0.4})`;
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ────────────────────────── MODE: LISSAJOUS ─────────────────────── */
+  _drawLissajous(W, H, ctx, glowFactor) {
+    const td = this.engine.timeDomainData;
+    if (!td || td.length === 0) return;
+
+    const cx     = W / 2;
+    const cy     = H / 2;
+    const scale  = Math.min(W, H) * 0.42;
+    const len    = td.length;
+    const offset = Math.floor(len / 4); // quarter-buffer phase shift
+
+    // Subtle crosshairs
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([4, 8]);
+    ctx.beginPath();
+    ctx.moveTo(cx, H * 0.08); ctx.lineTo(cx, H * 0.92);
+    ctx.moveTo(W * 0.08, cy); ctx.lineTo(W * 0.92, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Plot phase-shifted XY pairs as glowing dots
+    ctx.save();
+    for (let i = 0; i < len - offset; i++) {
+      const x = cx + td[i]          * scale;
+      const y = cy + td[i + offset] * scale;
+      if (!isFinite(x) || !isFinite(y)) continue;
+
+      const t     = i / len;
+      const hue   = remap(t, 0, 1, 200, 360);
+      const amp   = Math.abs(td[i]) + Math.abs(td[i + offset]);
+      const alpha = clamp(0.3 + glowFactor * 0.5 + amp * 0.4, 0, 1);
+      const size  = 1.2 + amp * 1.4;
+
+      ctx.shadowBlur  = 4 + glowFactor * 8;
+      ctx.shadowColor = `hsl(${hue},100%,70%)`;
+      ctx.fillStyle   = `hsla(${hue},90%,72%,${alpha})`;
+      ctx.fillRect(x - size / 2, y - size / 2, size, size);
+    }
+    ctx.restore();
+
+    // Unit circle guide (subtle)
+    ctx.save();
+    ctx.globalAlpha = 0.06 + glowFactor * 0.05;
+    ctx.strokeStyle = '#b44dff';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, scale, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
@@ -704,6 +884,19 @@ class UIController {
     /* Resize */
     window.addEventListener('resize', () => {
       this.visualizer.resize();
+    });
+
+    /* Mode switcher */
+    document.querySelectorAll('.btn-mode').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-mode').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        this.visualizer.setMode(btn.dataset.mode);
+      });
     });
   }
 
