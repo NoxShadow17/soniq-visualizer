@@ -1217,7 +1217,7 @@ class UIController {
       const name = file.name.replace(/\.[^/.]+$/, '').slice(0, 28);
       this._updateUploadLabel('♬ ' + name);
       // Auto-play
-      this._play();
+      this.play();
     } catch (err) {
       console.error('Audio decode error:', err);
       this._updateUploadLabel('⚠ Error — try another file');
