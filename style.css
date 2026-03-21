@@ -182,6 +182,65 @@ html, body {
   font-family: monospace;
 }
 
+/* ── Seek Bar ── */
+.seek-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0 4px;
+}
+.time-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-family: monospace;
+  min-width: 32px;
+  text-align: center;
+}
+.seek-bar-wrapper {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+#seekBar {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0; left: 0;
+  margin: 0;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  z-index: 5;
+}
+#seekBar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--treble);
+  box-shadow: 0 0 10px var(--treble-glow);
+  cursor: pointer;
+  margin-top: -1px; /* Center it */
+}
+.seek-fill {
+  position: absolute;
+  height: 100%;
+  left: 0; top: 0;
+  background: linear-gradient(90deg, var(--bass), var(--mids), var(--treble));
+  border-radius: 3px;
+  width: 0%;
+  pointer-events: none;
+  z-index: 2;
+  transition: width 0.1s linear;
+}
+
 #vizCanvas {
   display: block;
   width: 100%;

@@ -46,6 +46,16 @@
       </div>
     </main>
 
+    <!-- Seek Bar -->
+    <div class="seek-container" id="seekContainer">
+      <span class="time-label" id="timeCurrent">0:00</span>
+      <div class="seek-bar-wrapper">
+        <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1" aria-label="Audio seek bar" />
+        <div class="seek-fill" id="seekFill"></div>
+      </div>
+      <span class="time-label" id="timeTotal">0:00</span>
+    </div>
+
     <!-- Mode switcher -->
     <div class="mode-switcher" id="modeSwitcher" role="tablist" aria-label="Visualizer mode">
       <button class="btn-mode active" data-mode="bars"      role="tab" aria-selected="true">⬛ Bars</button>

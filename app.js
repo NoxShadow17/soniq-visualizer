@@ -124,10 +124,10 @@ class AudioEngine {
     this._demoMode = null;
   }
 
-  play() {
+  play(offset = null) {
     if (!this.ctx) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
-    if (this.isPlaying) return;
+    if (this.isPlaying && offset === null) return;
 
     if (this._demoMode) {
       this._startDemo(this._demoMode);
@@ -143,9 +143,10 @@ class AudioEngine {
     this.source.connect(this.filters[0]);
     
     this.source.loop = false;
-    const offset = this.pausedAt;
-    this.source.start(0, offset);
-    this.startedAt = this.ctx.currentTime - offset;
+    
+    const startOffset = (offset !== null) ? offset : this.pausedAt;
+    this.source.start(0, startOffset);
+    this.startedAt = this.ctx.currentTime - startOffset;
     this.isPlaying = true;
 
     this.source.onended = () => {
@@ -267,6 +268,12 @@ class AudioEngine {
     if (!this.analyser) return 0;
     this.analyser.getFloatTimeDomainData(this._timeData);
     return computeRMS(this._timeData);
+  }
+
+  get duration()    { return this.buffer ? this.buffer.duration : 0; }
+  get currentTime() {
+     if (!this.isPlaying || !this.ctx) return this.pausedAt;
+     return Math.min(this.duration, this.ctx.currentTime - this.startedAt);
   }
 
   setVolume(val) {
@@ -543,7 +550,6 @@ class Visualizer {
     /* ── Clear with bass-driven bloom glow ── */
     ctx.clearRect(0, 0, W, H);
 
-    // Vignette + bloom background — theme-aware
     const th = this._theme;
     const bloomR = this._bassAvg * 160;
     if (bloomR > 2) {
@@ -1053,6 +1059,13 @@ class UIController {
     this._eqSliders  = document.querySelectorAll('.eq-slider');
     this._btnResetEQ = document.getElementById('btnResetEQ');
 
+    // Seek Bar
+    this._seekBar     = document.getElementById('seekBar');
+    this._seekFill    = document.getElementById('seekFill');
+    this._timeCurrent = document.getElementById('timeCurrent');
+    this._timeTotal   = document.getElementById('timeTotal');
+    this._isScrubbing = false;
+
     this._ready      = false; // true once a source is loaded
     this._isPlaying  = false;
     this._activeDemo = null;
@@ -1118,6 +1131,22 @@ class UIController {
         const freq = parseInt(slider.dataset.freq);
         this.engine.setEqGain(freq, 0);
       });
+    });
+
+    /* Seek Bar */
+    this._seekBar.addEventListener('input', e => {
+      this._isScrubbing = true;
+      const val = parseFloat(e.target.value);
+      const time = (val / 100) * this.engine.duration;
+      this._timeCurrent.textContent = this._formatTime(time);
+      this._seekFill.style.width = val + '%';
+    });
+
+    this._seekBar.addEventListener('change', e => {
+      this._isScrubbing = false;
+      const val = parseFloat(e.target.value);
+      const time = (val / 100) * this.engine.duration;
+      this.engine.play(time);
     });
 
     /* Demo tracks */
@@ -1243,7 +1272,27 @@ class UIController {
     this._updateUploadLabel('Upload MP3');
     this._fileInput.value = '';
     this.updateBands(0, 0, 0);
-    this.updateRMS(0);
+    this.updateRMS(0); // Changed from this._updateRMS() to updateRMS(0) to match existing public method
+    this._updateSeekBar();
+  }
+
+  _updateSeekBar() {
+    if (!this.engine.isPlaying || this._isScrubbing) return;
+    const cur = this.engine.currentTime;
+    const dur = this.engine.duration;
+    if (dur > 0) {
+      const per = (cur / dur) * 100;
+      this._seekBar.value = per;
+      this._seekFill.style.width = per + '%';
+      this._timeCurrent.textContent = this._formatTime(cur);
+      this._timeTotal.textContent = this._formatTime(dur);
+    }
+  }
+
+  _formatTime(s) {
+    const mins = Math.floor(s / 60);
+    const secs = Math.floor(s % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
   _onPlay() {
