@@ -540,6 +540,7 @@ class Visualizer {
       case 'wave':     this._drawWaveform(W, H, ctx, glowFactor); break;
       case 'circular': this._drawCircular(W, H, ctx, glowFactor); break;
       case 'lissajous':this._drawLissajous(W, H, ctx, glowFactor); break;
+      case 'perspective': this._drawPerspective(W, H, ctx, glowFactor); break;
     }
 
     /* ── Update & draw particles (all modes — drop explosions work everywhere) ── */
@@ -806,6 +807,83 @@ class Visualizer {
     ctx.arc(cx, cy, scale, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
+  }
+
+  /* ──────────────────────── MODE: PERSPECTIVE ────────────────────── */
+  _drawPerspective(W, H, ctx, glowFactor) {
+    const th = this._theme;
+    const cx = W / 2;
+    const cy = H * 0.45; // vanishing point
+    const perspective = 0.85;
+
+    // Receding Floor Grid
+    ctx.save();
+    ctx.strokeStyle = `rgba(${th.bloom2.join(',')}, ${0.1 + glowFactor * 0.1})`;
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 10; i++) {
+      const z = i / 10;
+      const y = cy + (H - cy) * Math.pow(z, 2);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+    for (let i = -5; i <= 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(cx + i * W * 0.2, H);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Bars with perspective
+    const numBars = this.barCount;
+    for (let i = 0; i < numBars; i++) {
+      const val = this.smoothed[i];
+      const hue = remap(i, 0, numBars - 1, th.hueStart, th.hueEnd);
+      const sat = th.sat;
+      
+      // Mirror halves
+      for (let side = -1; side <= 1; side += 2) {
+        if (side === 0) continue;
+        
+        const xOffset = (i / numBars) * W * 0.45 * side;
+        const xBase = cx + xOffset;
+        const z = 1.0; // depth (fixed for this "row", but could be varied)
+        
+        // Simulating depth by scaling based on xOffset
+        const scale = 1.0 - Math.abs(xOffset / cx) * 0.5;
+        const barW = (W / numBars) * 1.2 * scale;
+        const barH = val * H * 0.6 * scale;
+      
+        const x = cx + xOffset;
+        const y = H * 0.9 - (1.0 - scale) * H * 0.2;
+        
+        if (barH > 0.5 && isFinite(x) && isFinite(y)) {
+          const glowColor = `hsl(${hue},${Math.max(sat,20)}%,70%)`;
+          ctx.save();
+          ctx.shadowBlur = (4 + glowFactor * 10) * scale;
+          ctx.shadowColor = glowColor;
+
+          const grad = ctx.createLinearGradient(x, y - barH, x, y);
+          grad.addColorStop(0, `hsl(${hue},${sat}%,${70 + val * 20}%)`);
+          grad.addColorStop(1, `hsl(${hue},${sat}%,20%)`);
+
+          ctx.fillStyle = grad;
+          // Draw a slanted "3D" bar (trapezoid)
+          const topW = barW * 0.8;
+          ctx.beginPath();
+          ctx.moveTo(x - barW/2, y);
+          ctx.lineTo(x + barW/2, y);
+          ctx.lineTo(cx + (xOffset + barW/2) * perspective, y - barH);
+          ctx.lineTo(cx + (xOffset - barW/2) * perspective, y - barH);
+          ctx.closePath();
+          ctx.fill();
+          
+          ctx.restore();
+        }
+      }
+    }
   }
 
   _clear() {
