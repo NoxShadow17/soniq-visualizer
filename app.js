@@ -62,6 +62,7 @@ class AudioEngine {
     this.analyser   = null;
     this.source     = null;
     this.gainNode   = null;
+    this.filters    = [];     // 8-band EQ filter chain
     this.buffer     = null;
 
     this._freqData  = null;   // Uint8Array — frequency domain
@@ -88,6 +89,23 @@ class AudioEngine {
 
       this.gainNode = this.ctx.createGain();
       this.gainNode.gain.value = 1.0;
+
+      // Create 8-band EQ filters
+      const frequencies = [60, 170, 310, 600, 1000, 3000, 6000, 12000];
+      this.filters = frequencies.map(freq => {
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'peaking';
+        filter.frequency.value = freq;
+        filter.Q.value = 1.4; // standard bandwidth
+        filter.gain.value = 0;
+        return filter;
+      });
+
+      // Chain filters: f0 -> f1 -> ... -> f7 -> gainNode
+      for (let i = 0; i < this.filters.length - 1; i++) {
+        this.filters[i].connect(this.filters[i + 1]);
+      }
+      this.filters[this.filters.length - 1].connect(this.gainNode);
 
       this.gainNode.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
@@ -120,7 +138,10 @@ class AudioEngine {
     this._stopSource();
     this.source = this.ctx.createBufferSource();
     this.source.buffer = this.buffer;
-    this.source.connect(this.gainNode);
+    
+    // Connect to START of EQ chain
+    this.source.connect(this.filters[0]);
+    
     this.source.loop = false;
     const offset = this.pausedAt;
     this.source.start(0, offset);
@@ -186,7 +207,7 @@ class AudioEngine {
       osc.frequency.value = freq;
       g.gain.value = gain;
       osc.connect(g);
-      g.connect(this.gainNode);
+      g.connect(this.filters[0]);
       osc.start(now);
       this._demoOscs.push({ osc, gain: g });
     };
@@ -251,6 +272,14 @@ class AudioEngine {
   setVolume(val) {
     if (this.gainNode) {
       this.gainNode.gain.setTargetAtTime(val, this.ctx.currentTime, 0.02);
+    }
+  }
+
+  setEqGain(freq, db) {
+    if (!this.ctx) return;
+    const filter = this.filters.find(f => f.frequency.value === freq);
+    if (filter) {
+      filter.gain.setTargetAtTime(db, this.ctx.currentTime, 0.05);
     }
   }
 
@@ -1020,6 +1049,10 @@ class UIController {
     this._bgVideoRemove   = document.getElementById('bgVideoRemove');
     this._bgVideoURL      = null;
 
+    // Equalizer
+    this._eqSliders  = document.querySelectorAll('.eq-slider');
+    this._btnResetEQ = document.getElementById('btnResetEQ');
+
     this._ready      = false; // true once a source is loaded
     this._isPlaying  = false;
     this._activeDemo = null;
@@ -1068,6 +1101,23 @@ class UIController {
     /* Volume */
     this._volumeSlider.addEventListener('input', e => {
       this.engine.setVolume(parseFloat(e.target.value));
+    });
+
+    /* Equalizer */
+    this._eqSliders.forEach(slider => {
+      slider.addEventListener('input', e => {
+        const freq = parseInt(slider.dataset.freq);
+        const gain = parseFloat(e.target.value);
+        this.engine.setEqGain(freq, gain);
+      });
+    });
+
+    this._btnResetEQ.addEventListener('click', () => {
+      this._eqSliders.forEach(slider => {
+        slider.value = 0;
+        const freq = parseInt(slider.dataset.freq);
+        this.engine.setEqGain(freq, 0);
+      });
     });
 
     /* Demo tracks */

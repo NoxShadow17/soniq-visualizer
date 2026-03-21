@@ -115,6 +115,73 @@ html, body {
   min-height: 260px;
   transition: box-shadow 0.4s ease;
 }
+/* ── Equalizer Panel ── */
+.eq-panel {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.eq-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.eq-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.btn-reset-eq {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.6rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.btn-reset-eq:hover {
+  border-color: var(--mids);
+  color: var(--mids);
+  background: rgba(180,77,255,0.1);
+}
+.eq-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  height: 120px;
+}
+.eq-band {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.eq-slider {
+  writing-mode: bt-lr; /* Vertical slider */
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  width: 12px;
+  height: 100%;
+  cursor: pointer;
+  accent-color: var(--mids);
+}
+.eq-freq {
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  font-family: monospace;
+}
+
 #vizCanvas {
   display: block;
   width: 100%;
