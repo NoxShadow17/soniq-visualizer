@@ -248,6 +248,12 @@ class AudioEngine {
     return computeRMS(this._timeData);
   }
 
+  setVolume(val) {
+    if (this.gainNode) {
+      this.gainNode.gain.setTargetAtTime(val, this.ctx.currentTime, 0.02);
+    }
+  }
+
   get sampleRate()     { return this.ctx ? this.ctx.sampleRate : 44100; }
   get binCount()       { return this.analyser ? this.analyser.frequencyBinCount : 0; }
   get timeDomainData() { return this._timeData; }  // already current after getRMS()
@@ -991,6 +997,7 @@ class UIController {
 
     this._btnPlay   = document.getElementById('btnPlay');
     this._btnStop   = document.getElementById('btnStop');
+    this._volumeSlider = document.getElementById('volumeSlider');
     this._fileInput = document.getElementById('fileInput');
     this._uploadZone = document.getElementById('uploadZone');
     this._idleMsg   = document.getElementById('idleMsg');
@@ -1056,6 +1063,11 @@ class UIController {
     /* Stop */
     this._btnStop.addEventListener('click', () => {
       this._stop();
+    });
+
+    /* Volume */
+    this._volumeSlider.addEventListener('input', e => {
+      this.engine.setVolume(parseFloat(e.target.value));
     });
 
     /* Demo tracks */

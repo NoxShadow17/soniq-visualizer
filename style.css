@@ -227,11 +227,32 @@ html, body {
 /* ── Controls ── */
 .controls {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
 }
+
+/* ── Volume Control ── */
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.volume-icon { font-size: 0.9rem; opacity: 0.7; }
+#volumeSlider {
+  width: 80px;
+  cursor: pointer;
+  accent-color: var(--treble);
+}
+/* Focus styles */
+#volumeSlider:focus-visible { outline: 2px solid var(--treble); outline-offset: 4px; }
 
 /* Upload zone */
 .upload-zone {
