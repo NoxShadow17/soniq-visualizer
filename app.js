@@ -180,6 +180,7 @@ class AudioEngine {
 
   _stopSource() {
     if (this.source) {
+      this.source.onended = null; // Prevent race condition when stopping to seek
       try { this.source.stop(); } catch(_) {}
       this.source.disconnect();
       this.source = null;
@@ -1103,7 +1104,7 @@ class UIController {
     this._btnPlay.addEventListener('click', () => {
       if (!this._ready) return;
       if (this._isPlaying) this._pause();
-      else this._play();
+      else this.play();
     });
 
     /* Stop */
@@ -1146,7 +1147,7 @@ class UIController {
       this._isScrubbing = false;
       const val = parseFloat(e.target.value);
       const time = (val / 100) * this.engine.duration;
-      this.engine.play(time);
+      this.play(time); // Use the refactored UIController.play()
     });
 
     /* Demo tracks */
@@ -1246,8 +1247,8 @@ class UIController {
     this._uploadZone.querySelector('.upload-text').textContent = text;
   }
 
-  _play() {
-    this.engine.play();
+  play(offset = null) {
+    this.engine.play(offset);
     this._onPlay();
   }
 
