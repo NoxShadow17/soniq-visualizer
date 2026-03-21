@@ -541,6 +541,7 @@ class Visualizer {
       case 'circular': this._drawCircular(W, H, ctx, glowFactor); break;
       case 'lissajous':this._drawLissajous(W, H, ctx, glowFactor); break;
       case 'perspective': this._drawPerspective(W, H, ctx, glowFactor); break;
+      case 'oscilloscope': this._drawOscilloscope(W, H, ctx, glowFactor); break;
     }
 
     /* ── Update & draw particles (all modes — drop explosions work everywhere) ── */
@@ -884,6 +885,79 @@ class Visualizer {
         }
       }
     }
+  }
+
+  /* ──────────────────────── MODE: OSCILLOSCOPE ───────────────────── */
+  _drawOscilloscope(W, H, ctx, glowFactor) {
+    const td = this.engine.timeDomainData;
+    if (!td || td.length === 0) return;
+
+    const cx = W / 2;
+    const cy = H / 2;
+
+    // Trigger logic (find zero-crossing with positive slope)
+    let triggerIdx = 0;
+    const triggerThreshold = 0.01;
+    for (let i = 1; i < td.length / 2; i++) {
+        if (td[i] > 0 && td[i-1] <= 0 && td[i] > triggerThreshold) {
+            triggerIdx = i;
+            break;
+        }
+    }
+
+    // Grid background
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 255, 65, 0.08)';
+    ctx.lineWidth = 1;
+    const gridSize = 40;
+    for (let x = 0; x <= W; x += gridSize) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y <= H; y += gridSize) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    // Main Axis
+    ctx.strokeStyle = 'rgba(0, 255, 65, 0.2)';
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+    ctx.restore();
+
+    // Waveform drawing
+    const phosphorGreen = '#39ff14';
+    const numPoints = Math.min(td.length - triggerIdx, 1024);
+    const step = W / (numPoints - 1);
+    const scaleY = H * 0.45;
+
+    const drawWave = (alpha, blur, width) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowBlur = blur;
+        ctx.shadowColor = phosphorGreen;
+        ctx.strokeStyle = phosphorGreen;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        for (let i = 0; i < numPoints; i++) {
+            const x = i * step;
+            const y = cy + td[triggerIdx + i] * scaleY;
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+    };
+
+    // Layered glow for phosphor look
+    drawWave(0.3, 20 + glowFactor * 15, 6);
+    drawWave(1.0, 4 + glowFactor * 6, 2);
+
+    // Scanline effect hint
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    for(let i=0; i<H; i+=4) {
+        ctx.fillRect(0, i, W, 1);
+    }
+    ctx.restore();
   }
 
   _clear() {
