@@ -32,10 +32,17 @@
 
     <!-- Canvas -->
     <main class="visualizer-wrapper" id="visualizer-wrapper">
+      <video id="bgVideo" autoplay loop muted playsinline></video>
       <canvas id="vizCanvas"></canvas>
       <div class="idle-message" id="idleMsg">
         <span class="idle-icon">♫</span>
         <p>Upload a track or choose a demo to begin</p>
+      </div>
+      <!-- BG video controls (shown only when video loaded) -->
+      <div class="bg-video-controls" id="bgVideoControls" hidden>
+        <input type="range" id="bgVideoOpacity" min="5" max="75" value="32"
+               aria-label="Background video opacity" title="Video brightness" />
+        <button id="bgVideoRemove" aria-label="Remove background video">✕ Remove BG</button>
       </div>
     </main>
 
@@ -71,6 +78,13 @@
         <input type="file" id="fileInput" accept="audio/*" hidden />
         <span class="upload-icon">⬆</span>
         <span class="upload-text">Upload MP3</span>
+      </label>
+
+      <!-- BG Video upload -->
+      <label class="upload-zone upload-zone-sm" id="bgVideoZone" for="bgVideoInput" tabindex="0" role="button" aria-label="Set background video">
+        <input type="file" id="bgVideoInput" accept="video/*" hidden />
+        <span class="upload-icon">🎬</span>
+        <span class="upload-text">BG Video</span>
       </label>
 
       <!-- Play / Pause -->

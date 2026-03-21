@@ -853,6 +853,14 @@ class UIController {
     this._wrapper    = document.getElementById('visualizer-wrapper');
     this._demoBtns   = document.querySelectorAll('.btn-demo');
 
+    // Background Video
+    this._bgVideo         = document.getElementById('bgVideo');
+    this._bgVideoInput    = document.getElementById('bgVideoInput');
+    this._bgVideoControls = document.getElementById('bgVideoControls');
+    this._bgVideoOpacity  = document.getElementById('bgVideoOpacity');
+    this._bgVideoRemove   = document.getElementById('bgVideoRemove');
+    this._bgVideoURL      = null;
+
     this._ready      = false; // true once a source is loaded
     this._isPlaying  = false;
     this._activeDemo = null;
@@ -916,6 +924,20 @@ class UIController {
       this.visualizer.resize();
     });
 
+    /* Background Video */
+    this._bgVideoInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) this._loadBgVideo(file);
+    });
+
+    this._bgVideoOpacity.addEventListener('input', e => {
+      this._bgVideo.style.opacity = e.target.value / 100;
+    });
+
+    this._bgVideoRemove.addEventListener('click', () => {
+      this._removeBgVideo();
+    });
+
     /* Theme picker */
     document.querySelectorAll('.theme-dot').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -956,6 +978,25 @@ class UIController {
       console.error('Audio decode error:', err);
       this._updateUploadLabel('⚠ Error — try another file');
     }
+  }
+
+  /* ── Background Video ── */
+  _loadBgVideo(file) {
+    if (this._bgVideoURL) URL.revokeObjectURL(this._bgVideoURL);
+    this._bgVideoURL = URL.createObjectURL(file);
+    this._bgVideo.src = this._bgVideoURL;
+    this._bgVideo.hidden = false;
+    this._bgVideoControls.hidden = false;
+    this._bgVideo.play().catch(e => console.warn('Video auto-play failed:', e));
+  }
+
+  _removeBgVideo() {
+    if (this._bgVideoURL) URL.revokeObjectURL(this._bgVideoURL);
+    this._bgVideoURL = null;
+    this._bgVideo.src = '';
+    this._bgVideo.hidden = true;
+    this._bgVideoControls.hidden = true;
+    this._bgVideoInput.value = '';
   }
 
   _updateUploadLabel(text) {
