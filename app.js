@@ -23,6 +23,17 @@ const MIN_DB       = -80;       // dBFS floor
 const MAX_DB       = 0;         // dBFS ceiling
 
 /* ─────────────────────────────────────────────
+   COLOUR THEMES
+───────────────────────────────────────────── */
+const THEMES = {
+  neon:   { hueStart:330, hueEnd:180, sat:90, wave:['#ff2d6b','#b44dff','#7c3bff','#00e5ff'], bloom1:[255,45,107],  bloom2:[124,59,255],  core:'#b44dff' },
+  sunset: { hueStart:15,  hueEnd:52,  sat:90, wave:['#ff3300','#ff6600','#ff9900','#ffcc00'], bloom1:[255,100,0],   bloom2:[200,50,0],    core:'#ff7700' },
+  matrix: { hueStart:105, hueEnd:145, sat:85, wave:['#00ff41','#00dd30','#00bb28','#39ff14'], bloom1:[0,210,60],    bloom2:[0,140,30],    core:'#00ff41' },
+  ocean:  { hueStart:175, hueEnd:248, sat:90, wave:['#00e5ff','#0288d1','#1565c0','#7c4dff'], bloom1:[0,180,255],   bloom2:[0,80,200],    core:'#2979ff' },
+  mono:   { hueStart:0,   hueEnd:0,   sat:0,  wave:['#555','#888','#bbb','#eee'],             bloom1:[160,160,160], bloom2:[100,100,100], core:'#ccc'    },
+};
+
+/* ─────────────────────────────────────────────
    UTILITY
 ───────────────────────────────────────────── */
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -376,7 +387,8 @@ class Visualizer {
     this._bassAvg  = 0;   // smoothed bass
     this._trebleAvg = 0;  // smoothed treble
 
-    this._mode          = 'bars'; // 'bars' | 'wave' | 'circular' | 'lissajous'
+    this._mode          = 'bars';
+    this._theme         = THEMES.neon;
     this._dropDetector = new DropDetector();
 
     this._initResize();
@@ -415,6 +427,11 @@ class Visualizer {
     if (this._rafId) cancelAnimationFrame(this._rafId);
     this._rafId = null;
     this._clear();
+  }
+
+  setTheme(name) {
+    this._theme = THEMES[name] || THEMES.neon;
+    document.documentElement.setAttribute('data-theme', name);
   }
 
   setMode(mode) {
@@ -491,12 +508,15 @@ class Visualizer {
     /* ── Clear with bass-driven bloom glow ── */
     ctx.clearRect(0, 0, W, H);
 
-    // Vignette + bloom background
+    // Vignette + bloom background — theme-aware
+    const th = this._theme;
     const bloomR = this._bassAvg * 160;
     if (bloomR > 2) {
+      const [r1,g1,b1] = th.bloom1;
+      const [r2,g2,b2] = th.bloom2;
       const grd = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.75);
-      grd.addColorStop(0, `rgba(255,45,107,${this._bassAvg * 0.18})`);
-      grd.addColorStop(0.5, `rgba(124,59,255,${this._bassAvg * 0.07})`);
+      grd.addColorStop(0,   `rgba(${r1},${g1},${b1},${this._bassAvg * 0.18})`);
+      grd.addColorStop(0.5, `rgba(${r2},${g2},${b2},${this._bassAvg * 0.07})`);
       grd.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = grd;
       ctx.fillRect(0, 0, W, H);
@@ -533,6 +553,7 @@ class Visualizer {
 
   /* ─────────────────────────── MODE: BARS ─────────────────────────── */
   _drawBars(W, H, ctx, barW, baseY, maxBarH, glowFactor) {
+    const th  = this._theme;
     const gap = 2;
     for (let i = 0; i < this.barCount; i++) {
       const val  = this.smoothed[i];
@@ -542,17 +563,18 @@ class Visualizer {
       const xLeft  = leftIdx  * (barW + gap);
       const xRight = rightIdx * (barW + gap);
       const y      = baseY - barH;
-      const hue       = remap(i, 0, this.barCount - 1, 330, 180);
-      const glowColor = `hsl(${hue},100%,70%)`;
+      const hue       = remap(i, 0, this.barCount - 1, th.hueStart, th.hueEnd);
+      const sat       = th.sat;
+      const glowColor = `hsl(${hue},${Math.max(sat,20)}%,70%)`;
 
       if (barH > 0.5 && isFinite(y) && isFinite(xLeft) && isFinite(xRight)) {
         ctx.save();
         ctx.shadowBlur  = 8 + glowFactor * 24 + val * 16;
         ctx.shadowColor = glowColor;
         const grad = ctx.createLinearGradient(0, y, 0, baseY);
-        grad.addColorStop(0,   `hsl(${hue},100%,${clamp(70 + val * 20, 0, 100)}%)`);
-        grad.addColorStop(0.4, `hsl(${hue},90%,50%)`);
-        grad.addColorStop(1,   `hsl(${hue},70%,20%)`);
+        grad.addColorStop(0,   `hsl(${hue},${sat}%,${clamp(70 + val * 20, 0, 100)}%)`);
+        grad.addColorStop(0.4, `hsl(${hue},${sat}%,50%)`);
+        grad.addColorStop(1,   `hsl(${hue},${Math.floor(sat*0.8)}%,20%)`);
         const radius = Math.min(barW / 2, 4);
         this._roundRect(ctx, xLeft,  y, barW, barH, radius);
         ctx.fillStyle = grad;
@@ -574,15 +596,16 @@ class Visualizer {
         ctx.save();
         ctx.shadowBlur = 10 + glowFactor * 12;
         ctx.shadowColor = glowColor;
-        ctx.fillStyle  = `hsl(${hue},100%,82%)`;
+        ctx.fillStyle  = `hsl(${hue},${sat}%,82%)`;
         ctx.fillRect(xLeft,  capY, barW, 2);
         ctx.fillRect(xRight, capY, barW, 2);
         ctx.restore();
       }
 
       if (this._trebleAvg > 0.35 && val > 0.72 && Math.random() < 0.12) {
-        this.particles.push(new Particle(xRight + barW / 2, y, glowColor));
-        this.particles.push(new Particle(xLeft  + barW / 2, y, glowColor));
+        const glowColor2 = `hsl(${remap(i, 0, this.barCount-1, th.hueStart, th.hueEnd)},${Math.max(th.sat,20)}%,70%)`;
+        this.particles.push(new Particle(xRight + barW / 2, y, glowColor2));
+        this.particles.push(new Particle(xLeft  + barW / 2, y, glowColor2));
       }
     }
 
@@ -602,6 +625,9 @@ class Visualizer {
     const td = this.engine.timeDomainData;
     if (!td || td.length === 0) return;
 
+    const th     = this._theme;
+    const [c0,c1,c2,c3] = th.wave;
+
     const baseY  = H * 0.5;
     const scaleY = H * 0.40;
     const step   = W / (td.length - 1);
@@ -618,10 +644,10 @@ class Visualizer {
 
     // Glow pass (wide, blurred)
     const hGrad = ctx.createLinearGradient(0, 0, W, 0);
-    hGrad.addColorStop(0,    '#ff2d6b');
-    hGrad.addColorStop(0.33, '#b44dff');
-    hGrad.addColorStop(0.66, '#7c3bff');
-    hGrad.addColorStop(1,    '#00e5ff');
+    hGrad.addColorStop(0,    c0);
+    hGrad.addColorStop(0.33, c1);
+    hGrad.addColorStop(0.66, c2);
+    hGrad.addColorStop(1,    c3);
 
     const drawLine = (alpha, blur, lineW) => {
       ctx.save();
@@ -666,20 +692,22 @@ class Visualizer {
 
   /* ─────────────────────────── MODE: CIRCULAR ─────────────────────── */
   _drawCircular(W, H, ctx, glowFactor) {
+    const th      = this._theme;
     const cx      = W / 2;
     const cy      = H * 0.48;
     const minDim  = Math.min(W, H);
     const innerR  = minDim * 0.16;
     const maxLen  = minDim * 0.34;
-    const total   = this.barCount * 2; // full 360° using both mirror halves
+    const total   = this.barCount * 2;
 
     for (let i = 0; i < this.barCount; i++) {
       const val    = this.smoothed[i];
       const barLen = val * maxLen;
       if (barLen < 0.5) continue;
 
-      const hue       = remap(i, 0, this.barCount - 1, 330, 180);
-      const glowColor = `hsl(${hue},100%,70%)`;
+      const hue       = remap(i, 0, this.barCount - 1, th.hueStart, th.hueEnd);
+      const sat       = th.sat;
+      const glowColor = `hsl(${hue},${Math.max(sat,20)}%,70%)`;
       const lineW     = Math.max(1.5, 2.5 - (i / this.barCount) * 1.2);
 
       for (let side = 0; side < 2; side++) {
@@ -693,7 +721,7 @@ class Visualizer {
         ctx.save();
         ctx.shadowBlur  = 6 + glowFactor * 16 + val * 10;
         ctx.shadowColor = glowColor;
-        ctx.strokeStyle = `hsl(${hue},90%,62%)`;
+        ctx.strokeStyle = `hsl(${hue},${sat}%,62%)`;
         ctx.lineWidth   = lineW;
         ctx.lineCap     = 'round';
         ctx.beginPath();
@@ -706,18 +734,18 @@ class Visualizer {
 
     // Inner glowing core circle
     ctx.save();
+    const [r1,g1,b1] = th.bloom2;
     const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
-    coreGrad.addColorStop(0,   `rgba(180,77,255,${0.35 + glowFactor * 0.45})`);
-    coreGrad.addColorStop(0.6, `rgba(124,59,255,${0.12 + glowFactor * 0.15})`);
-    coreGrad.addColorStop(1,   'rgba(124,59,255,0.02)');
+    coreGrad.addColorStop(0,   `rgba(${r1},${g1},${b1},${0.40 + glowFactor * 0.45})`);
+    coreGrad.addColorStop(0.6, `rgba(${r1},${g1},${b1},${0.12 + glowFactor * 0.15})`);
+    coreGrad.addColorStop(1,   `rgba(${r1},${g1},${b1},0.02)`);
     ctx.beginPath();
     ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
     ctx.fillStyle = coreGrad;
     ctx.fill();
-    // Ring stroke
     ctx.shadowBlur  = 12 + glowFactor * 18;
-    ctx.shadowColor = '#b44dff';
-    ctx.strokeStyle = `rgba(180,77,255,${0.4 + glowFactor * 0.4})`;
+    ctx.shadowColor = th.core;
+    ctx.strokeStyle = `rgba(${r1},${g1},${b1},${0.45 + glowFactor * 0.4})`;
     ctx.lineWidth   = 1.5;
     ctx.stroke();
     ctx.restore();
@@ -728,11 +756,12 @@ class Visualizer {
     const td = this.engine.timeDomainData;
     if (!td || td.length === 0) return;
 
+    const th     = this._theme;
     const cx     = W / 2;
     const cy     = H / 2;
     const scale  = Math.min(W, H) * 0.42;
     const len    = td.length;
-    const offset = Math.floor(len / 4); // quarter-buffer phase shift
+    const offset = Math.floor(len / 4);
 
     // Subtle crosshairs
     ctx.save();
@@ -755,22 +784,23 @@ class Visualizer {
       if (!isFinite(x) || !isFinite(y)) continue;
 
       const t     = i / len;
-      const hue   = remap(t, 0, 1, 200, 360);
+      const hue   = th.hueStart + t * (th.hueEnd - th.hueStart);
+      const sat   = th.sat;
       const amp   = Math.abs(td[i]) + Math.abs(td[i + offset]);
       const alpha = clamp(0.3 + glowFactor * 0.5 + amp * 0.4, 0, 1);
       const size  = 1.2 + amp * 1.4;
 
       ctx.shadowBlur  = 4 + glowFactor * 8;
-      ctx.shadowColor = `hsl(${hue},100%,70%)`;
-      ctx.fillStyle   = `hsla(${hue},90%,72%,${alpha})`;
+      ctx.shadowColor = `hsl(${hue},${Math.max(sat,20)}%,70%)`;
+      ctx.fillStyle   = `hsla(${hue},${sat}%,72%,${alpha})`;
       ctx.fillRect(x - size / 2, y - size / 2, size, size);
     }
     ctx.restore();
 
-    // Unit circle guide (subtle)
+    // Unit circle guide
     ctx.save();
     ctx.globalAlpha = 0.06 + glowFactor * 0.05;
-    ctx.strokeStyle = '#b44dff';
+    ctx.strokeStyle = th.core;
     ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.arc(cx, cy, scale, 0, Math.PI * 2);
@@ -884,6 +914,15 @@ class UIController {
     /* Resize */
     window.addEventListener('resize', () => {
       this.visualizer.resize();
+    });
+
+    /* Theme picker */
+    document.querySelectorAll('.theme-dot').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.theme-dot').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.visualizer.setTheme(btn.dataset.theme);
+      });
     });
 
     /* Mode switcher */

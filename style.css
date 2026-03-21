@@ -329,6 +329,56 @@ html, body {
 }
 
 /* ── Responsive ── */
+/* ── Theme Picker ── */
+.theme-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.theme-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; flex-shrink: 0; }
+.theme-dots  { display: flex; gap: 8px; }
+.theme-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+.theme-dot:hover { transform: scale(1.18); }
+.theme-dot.active {
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(255,255,255,0.45);
+  transform: scale(1.12);
+}
+
+/* ── Theme variable overrides ── */
+[data-theme="sunset"] {
+  --bass:        #ff4500; --bass-glow:   rgba(255,69,0,0.6);
+  --mids:        #ff8800; --mids-glow:   rgba(255,136,0,0.6);
+  --treble:      #ffcc00; --treble-glow: rgba(255,204,0,0.6);
+  --accent:      #cc4400;
+}
+[data-theme="matrix"] {
+  --bass:        #00ff41; --bass-glow:   rgba(0,255,65,0.5);
+  --mids:        #00cc33; --mids-glow:   rgba(0,204,51,0.5);
+  --treble:      #39ff14; --treble-glow: rgba(57,255,20,0.5);
+  --accent:      #008822;
+}
+[data-theme="ocean"] {
+  --bass:        #00bcd4; --bass-glow:   rgba(0,188,212,0.55);
+  --mids:        #2979ff; --mids-glow:   rgba(41,121,255,0.55);
+  --treble:      #7c4dff; --treble-glow: rgba(124,77,255,0.55);
+  --accent:      #0050cc;
+}
+[data-theme="mono"] {
+  --bass:        #777; --bass-glow:   rgba(140,140,140,0.5);
+  --mids:        #aaa; --mids-glow:   rgba(190,190,190,0.5);
+  --treble:      #ddd; --treble-glow: rgba(220,220,220,0.5);
+  --accent:      #888;
+}
+
 /* ── Mode Switcher ── */
 .mode-switcher {
   display: flex;
