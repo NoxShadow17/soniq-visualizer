@@ -67,6 +67,10 @@ class AudioEngine {
     this.micStream  = null;
     this.micNode    = null;
 
+    this.convolver  = null;
+    this.wetGain    = null;
+    this.dryGain    = null;
+
     this._freqData  = null;   // Uint8Array — frequency domain
     this._timeData  = null;   // Float32Array — time domain (for RMS)
 
@@ -92,6 +96,18 @@ class AudioEngine {
       this.gainNode = this.ctx.createGain();
       this.gainNode.gain.value = 1.0;
 
+      // Reverb routing
+      this.convolver = this.ctx.createConvolver();
+      this.convolver.buffer = this._createImpulseResponse(2.5, 2.0); // 2.5s duration, 2.0 decay
+      this.wetGain = this.ctx.createGain();
+      this.dryGain = this.ctx.createGain();
+      this.wetGain.gain.value = 0; // default 0% reverb
+      this.dryGain.gain.value = 1; // default 100% dry
+
+      this.dryGain.connect(this.gainNode);
+      this.convolver.connect(this.wetGain);
+      this.wetGain.connect(this.gainNode);
+
       // Create 8-band EQ filters
       const frequencies = [60, 170, 310, 600, 1000, 3000, 6000, 12000];
       this.filters = frequencies.map(freq => {
@@ -103,11 +119,13 @@ class AudioEngine {
         return filter;
       });
 
-      // Chain filters: f0 -> f1 -> ... -> f7 -> gainNode
+      // Chain filters: f0 -> f1 -> ... -> f7 -> dryGain AND convolver
       for (let i = 0; i < this.filters.length - 1; i++) {
         this.filters[i].connect(this.filters[i + 1]);
       }
-      this.filters[this.filters.length - 1].connect(this.gainNode);
+      const lastEq = this.filters[this.filters.length - 1];
+      lastEq.connect(this.dryGain);
+      lastEq.connect(this.convolver);
 
       this.gainNode.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
@@ -118,6 +136,30 @@ class AudioEngine {
       const bins = this.analyser.frequencyBinCount;
       this._freqData = new Uint8Array(bins);
       this._timeData = new Float32Array(this.analyser.fftSize);
+    }
+  }
+
+  _createImpulseResponse(duration, decay) {
+    const sampleRate = this.ctx.sampleRate;
+    const length = sampleRate * duration;
+    const impulse = this.ctx.createBuffer(2, length, sampleRate);
+    const left = impulse.getChannelData(0);
+    const right = impulse.getChannelData(1);
+
+    for (let i = 0; i < length; i++) {
+      // White noise exponentially decayed
+      const n = (i === 0) ? 1 : (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+      left[i] = n;
+      right[i] = n;
+    }
+    return impulse;
+  }
+
+  setReverb(amount) {
+    if (this.wetGain && this.dryGain) {
+      // Equal power crossfade
+      this.wetGain.gain.setTargetAtTime(amount, this.ctx.currentTime, 0.05);
+      this.dryGain.gain.setTargetAtTime(1.0 - amount * 0.5, this.ctx.currentTime, 0.05);
     }
   }
 
@@ -1275,10 +1317,17 @@ class UIController {
       this._stop();
     });
 
-    /* Volume */
+    /* Volume & Reverb */
     this._volumeSlider.addEventListener('input', e => {
       this.engine.setVolume(parseFloat(e.target.value));
     });
+    
+    this._reverbSlider = document.getElementById('reverbSlider');
+    if (this._reverbSlider) {
+      this._reverbSlider.addEventListener('input', e => {
+        this.engine.setReverb(parseFloat(e.target.value));
+      });
+    }
 
     /* Equalizer */
     this._eqSliders.forEach(slider => {

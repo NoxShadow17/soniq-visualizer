@@ -404,8 +404,8 @@ html, body {
   width: 100%;
 }
 
-/* ── Volume Control ── */
-.volume-control {
+/* ── Volume & Effect Control ── */
+.volume-control, .effect-control {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -416,14 +416,14 @@ html, body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
-.volume-icon { font-size: 0.9rem; opacity: 0.7; }
-#volumeSlider {
+.volume-icon, .effect-icon { font-size: 0.9rem; opacity: 0.7; }
+#volumeSlider, #reverbSlider {
   width: 80px;
   cursor: pointer;
   accent-color: var(--treble);
 }
 /* Focus styles */
-#volumeSlider:focus-visible { outline: 2px solid var(--treble); outline-offset: 4px; }
+#volumeSlider:focus-visible, #reverbSlider:focus-visible { outline: 2px solid var(--treble); outline-offset: 4px; }
 
 /* Upload zone */
 .upload-zone {
