@@ -111,6 +111,9 @@ class AudioEngine {
 
       this.gainNode.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
+      
+      this.streamDestination = this.ctx.createMediaStreamDestination();
+      this.analyser.connect(this.streamDestination);
 
       const bins = this.analyser.frequencyBinCount;
       this._freqData = new Uint8Array(bins);
@@ -581,6 +584,18 @@ class Visualizer {
 
     /* ── Clear with bass-driven bloom glow ── */
     ctx.clearRect(0, 0, W, H);
+
+    /* ── Include manual background if recording ── */
+    if (this._isRecording && ui) {
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, W, H);
+      if (ui._bgVideo && !ui._bgVideo.hidden) {
+        const opacity = parseFloat(ui._bgVideo.style.opacity);
+        ctx.globalAlpha = isNaN(opacity) ? 1.0 : opacity;
+        ctx.drawImage(ui._bgVideo, 0, 0, W, H);
+        ctx.globalAlpha = 1.0;
+      }
+    }
 
     const th = this._theme;
     const bloomR = this._bassAvg * 160;
@@ -1101,10 +1116,20 @@ class UIController {
     this._btnHelp      = document.getElementById('btnHelp');
     this._btnCloseHelp = document.getElementById('btnCloseHelp');
 
-    // Fullscreen & Capture
+    // Fullscreen, Capture & Record
     this._btnFs        = document.getElementById('btnFs');
     this._btnCapture   = document.getElementById('btnCapture');
+    this._btnRecord    = document.getElementById('btnRecord');
+    this._recordingStatus = document.getElementById('recordingStatus');
+    this._recTimer     = document.getElementById('recTimer');
     this._fsTimer      = null;
+
+    // Recording state
+    this._isRecording  = false;
+    this._mediaRecorder = null;
+    this._recordedChunks = [];
+    this._recordStartTime = 0;
+    this._recordInterval = null;
 
     // Seek Bar
     this._seekBar     = document.getElementById('seekBar');
@@ -1259,12 +1284,15 @@ class UIController {
       });
     });
 
-    /* Fullscreen & Capture */
+    /* Fullscreen, Capture & Record */
     if (this._btnFs) {
       this._btnFs.addEventListener('click', () => this._toggleFullscreen());
     }
     if (this._btnCapture) {
       this._btnCapture.addEventListener('click', () => this._captureScreenshot());
+    }
+    if (this._btnRecord) {
+      this._btnRecord.addEventListener('click', () => this._toggleRecording());
     }
     document.addEventListener('fullscreenchange', () => {
       const isFs = !!document.fullscreenElement;
@@ -1623,6 +1651,11 @@ class UIController {
         this._captureScreenshot();
       }
 
+      // R -> Toggle Recording
+      if (key === 'r') {
+        this._toggleRecording();
+      }
+
       // T -> Cycle Theme
       if (key === 't') {
         this._cycleTheme();
@@ -1675,6 +1708,83 @@ class UIController {
     vol = Math.max(0, Math.min(1.5, vol + delta));
     this._volumeSlider.value = vol;
     this.engine.setVolume(vol);
+  }
+
+  /* ── Record & Export ── */
+  _toggleRecording() {
+    if (this._isRecording) {
+      this._stopRecording();
+    } else {
+      this._startRecording();
+    }
+  }
+
+  _startRecording() {
+    if (!this.engine.ctx || !this.engine.streamDestination) return;
+    
+    // Capture 60FPS video stream from canvas
+    const videoStream = this.canvas.captureStream(60);
+    const audioStream = this.engine.streamDestination.stream;
+    
+    // Combine streams
+    const combinedStream = new MediaStream([...videoStream.getTracks(), ...audioStream.getTracks()]);
+    
+    this._recordedChunks = [];
+    try {
+      this._mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm; codecs=vp9,opus' });
+    } catch(e) {
+      // Fallback
+      this._mediaRecorder = new MediaRecorder(combinedStream);
+    }
+    
+    this._mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) this._recordedChunks.push(e.data);
+    };
+    
+    this._mediaRecorder.onstop = () => {
+      const blob = new Blob(this._recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `soniq-record-${new Date().getTime()}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    this._mediaRecorder.start();
+    this._isRecording = true;
+    this.visualizer._isRecording = true; // Tell Visualizer to render background overlay
+    
+    // UI Feedback
+    if (this._btnRecord) this._btnRecord.classList.add('recording');
+    if (this._recordingStatus) this._recordingStatus.hidden = false;
+    this._recordStartTime = Date.now();
+    this._updateRecordTimer();
+    this._recordInterval = setInterval(() => this._updateRecordTimer(), 1000);
+  }
+
+  _stopRecording() {
+    if (this._mediaRecorder && this._mediaRecorder.state !== 'inactive') {
+      this._mediaRecorder.stop();
+    }
+    this._isRecording = false;
+    this.visualizer._isRecording = false;
+    
+    // UI Feedback
+    if (this._btnRecord) this._btnRecord.classList.remove('recording');
+    if (this._recordingStatus) this._recordingStatus.hidden = true;
+    clearInterval(this._recordInterval);
+    if (this._recTimer) this._recTimer.textContent = '00:00';
+  }
+
+  _updateRecordTimer() {
+    if (!this._recTimer) return;
+    const elapsed = Math.floor((Date.now() - this._recordStartTime) / 1000);
+    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+    const s = (elapsed % 60).toString().padStart(2, '0');
+    this._recTimer.textContent = `${m}:${s}`;
   }
 
   /* ── Capture ── */

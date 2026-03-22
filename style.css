@@ -791,6 +791,54 @@ kbd {
   transform: scale(1.05);
 }
 
+.btn-record.recording {
+  background: rgba(255, 45, 107, 0.15);
+  border-color: var(--bass);
+  color: var(--bass);
+  box-shadow: 0 0 15px var(--bass-glow);
+  animation: rec-pulse 2s infinite;
+}
+@keyframes rec-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 45, 107, 0.4); }
+  50%      { box-shadow: 0 0 20px rgba(255, 45, 107, 0.8); }
+}
+
+.recording-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 45, 107, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 50;
+  transition: opacity 0.3s;
+}
+.rec-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--bass);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--bass-glow);
+  animation: rec-blink 1s ease-in-out infinite;
+}
+.rec-timer {
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+}
+@keyframes rec-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
 .visualizer-wrapper:fullscreen {
   width: 100vw;
   height: 100vh;

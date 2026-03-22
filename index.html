@@ -72,7 +72,16 @@
       <button class="btn-fs" id="btnCapture" title="Capture Screenshot (C)" aria-label="Capture Screenshot">
         <span class="fs-icon">📸</span>
       </button>
+      <button class="btn-fs btn-record" id="btnRecord" title="Record Visualizer (R)" aria-label="Record Visualizer">
+        <span class="fs-icon">🔴</span>
+      </button>
     </header>
+
+    <!-- Recording Status Indicator -->
+    <div id="recordingStatus" class="recording-status" hidden>
+      <span class="rec-dot"></span>
+      <span class="rec-timer" id="recTimer">00:00</span>
+    </div>
 
     <!-- Band meters -->
     <div class="band-meters" id="bandMeters" aria-label="Frequency band meters">
@@ -219,6 +228,7 @@
             <li><kbd>1-6</kbd> <span>Switch Mode</span></li>
             <li><kbd>F</kbd> <span>Fullscreen</span></li>
             <li><kbd>C</kbd> <span>Capture</span></li>
+            <li><kbd>R</kbd> <span>Record / Export</span></li>
             <li><kbd>T</kbd> <span>Cycle Theme</span></li>
             <li><kbd>↑ / ↓</kbd> <span>Volume</span></li>
           </ul>
