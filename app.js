@@ -1209,6 +1209,10 @@ class UIController {
     this._isPlaying  = false;
     this._activeDemo = null;
 
+    // Song Title
+    this._songTitle     = document.getElementById('songTitle');
+    this._songTitleText = document.getElementById('songTitleText');
+
     this._bindEvents();
     this._bindKeyboard();
     this._bindFullscreenIdle();
@@ -1299,6 +1303,15 @@ class UIController {
         btn.classList.add('active');
         this._activeDemo = mode;
         this._ready = true;
+        
+        // Update Song Title
+        const demoTitles = {
+          'bass': 'Demo — Harmonic Thump (Bass)',
+          'mids': 'Demo — Ethereal Resonance (Mids)',
+          'treble': 'Demo — Celestial Sparks (Treble)'
+        };
+        this._updateSongTitle(demoTitles[mode] || 'Demo Track');
+
         this.engine.startDemoMode(mode);
         this._onPlay();
       });
@@ -1420,6 +1433,17 @@ class UIController {
     }
   }
 
+  /* ── Song Title ── */
+  _updateSongTitle(text) {
+    if (!this._songTitle || !this._songTitleText) return;
+    this._songTitleText.textContent = text;
+    this._songTitle.hidden = false;
+  }
+
+  _hideSongTitle() {
+    if (this._songTitle) this._songTitle.hidden = true;
+  }
+
   async _loadFile(file) {
     try {
       this._updateUploadLabel('Loading…');
@@ -1429,8 +1453,9 @@ class UIController {
       this._ready = true;
       this._btnPlay.disabled  = false;
       this._btnStop.disabled  = false;
-      const name = file.name.replace(/\.[^/.]+$/, '').slice(0, 28);
-      this._updateUploadLabel('♬ ' + name);
+      const name = file.name.replace(/\.[^/.]+$/, '');
+      this._updateUploadLabel('♬ ' + name.slice(0, 28));
+      this._updateSongTitle(name);
       // Auto-play
       this.play();
     } catch (err) {
@@ -1475,6 +1500,7 @@ class UIController {
   _stop() {
     this.engine.stop();
     this._onMicStop();
+    this._hideSongTitle();
     this._clearDemoBtns();
     this._activeDemo = null;
     this._isPlaying  = false;
@@ -1671,6 +1697,7 @@ class UIController {
     document.querySelector('.seek-container').style.pointerEvents = 'none';
     
     this.visualizer.start();
+    this._updateSongTitle('Live — Microphone Input');
   }
 
   _onMicStop() {
@@ -1687,6 +1714,7 @@ class UIController {
     // Restore seek bar
     document.querySelector('.seek-container').style.opacity = '1';
     document.querySelector('.seek-container').style.pointerEvents = 'auto';
+    this._hideSongTitle();
   }
 
   /* ── Keyboard Shortcuts ── */
