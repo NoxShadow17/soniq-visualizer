@@ -1596,9 +1596,9 @@ class UIController {
         this._cycleTheme();
       }
 
-      // 1-7 -> Modes
-      if (key >= '1' && key <= '7') {
-        const modes = ['bars', 'wave', 'radial', 'lissajous', '3d', 'oscilloscope', 'retro'];
+      // 1-6 -> Modes
+      if (key >= '1' && key <= '6') {
+        const modes = ['bars', 'wave', 'circular', 'lissajous', 'perspective', 'oscilloscope'];
         const mode = modes[parseInt(key) - 1];
         if (mode) this._setMode(mode);
       }
