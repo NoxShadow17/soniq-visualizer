@@ -297,6 +297,34 @@ class AudioEngine {
   get sampleRate()     { return this.ctx ? this.ctx.sampleRate : 44100; }
   get binCount()       { return this.analyser ? this.analyser.frequencyBinCount : 0; }
   get timeDomainData() { return this._timeData; }  // already current after getRMS()
+
+  /* ── Microphone ── */
+  async startMic() {
+    this._ensureContext();
+    this.stop();
+
+    try {
+      this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.micNode = this.ctx.createMediaStreamSource(this.micStream);
+      this.micNode.connect(this.filters[0]);
+      this.isPlaying = true;
+      return true;
+    } catch (err) {
+      console.error('Microphone error:', err);
+      return false;
+    }
+  }
+
+  stopMic() {
+    if (this.micNode) {
+      this.micNode.disconnect();
+      this.micNode = null;
+    }
+    if (this.micStream) {
+      this.micStream.getTracks().forEach(track => track.stop());
+      this.micStream = null;
+    }
+  }
 }
 
 /* ─────────────────────────────────────────────
