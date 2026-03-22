@@ -1094,6 +1094,11 @@ class UIController {
     // Mic
     this._btnMic = document.getElementById('btnMic');
 
+    // Help
+    this._helpSection  = document.querySelector('.help-section');
+    this._btnHelp      = document.getElementById('btnHelp');
+    this._btnCloseHelp = document.getElementById('btnCloseHelp');
+
     // Seek Bar
     this._seekBar     = document.getElementById('seekBar');
     this._seekFill    = document.getElementById('seekFill');
@@ -1106,6 +1111,7 @@ class UIController {
     this._activeDemo = null;
 
     this._bindEvents();
+    this._bindKeyboard();
     this._startIdleLoop();
   }
 
@@ -1201,6 +1207,20 @@ class UIController {
     /* Mic */
     this._btnMic.addEventListener('click', () => {
       this._toggleMic();
+    });
+
+    /* Help */
+    this._btnHelp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._helpSection.classList.add('active');
+    });
+    this._btnCloseHelp.addEventListener('click', () => {
+      this._helpSection.classList.remove('active');
+    });
+    document.addEventListener('click', (e) => {
+      if (!this._helpSection.contains(e.target)) {
+        this._helpSection.classList.remove('active');
+      }
     });
 
     /* Resize */
@@ -1543,6 +1563,85 @@ class UIController {
     // Restore seek bar
     document.querySelector('.seek-container').style.opacity = '1';
     document.querySelector('.seek-container').style.pointerEvents = 'auto';
+  }
+
+  /* ── Keyboard Shortcuts ── */
+  _bindKeyboard() {
+    window.addEventListener('keydown', (e) => {
+      // Ignore if typing in an input (though we don't have many)
+      if (e.target.tagName === 'INPUT') return;
+
+      const key = e.key.toLowerCase();
+
+      // Space -> Toggle Play/Pause
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (this._ready) this.play();
+      }
+
+      // S -> Stop
+      if (key === 's') {
+        this._stop();
+      }
+
+      // M -> Toggle Mic
+      if (key === 'm') {
+        this._toggleMic();
+      }
+
+      // T -> Cycle Theme
+      if (key === 't') {
+        this._cycleTheme();
+      }
+
+      // 1-7 -> Modes
+      if (key >= '1' && key <= '7') {
+        const modes = ['bars', 'wave', 'radial', 'lissajous', '3d', 'oscilloscope', 'retro'];
+        const mode = modes[parseInt(key) - 1];
+        if (mode) this._setMode(mode);
+      }
+
+      // Arrows -> Volume
+      if (e.code === 'ArrowUp') {
+        e.preventDefault();
+        this._adjustVolume(0.1);
+      }
+      if (e.code === 'ArrowDown') {
+        e.preventDefault();
+        this._adjustVolume(-0.1);
+      }
+    });
+  }
+
+  _cycleTheme() {
+    const themeNames = Object.keys(THEMES);
+    const currentIdx = themeNames.findIndex(name => THEMES[name] === this.visualizer._theme);
+    const nextIdx = (currentIdx + 1) % themeNames.length;
+    this._setTheme(themeNames[nextIdx]);
+  }
+
+  _setMode(mode) {
+    this.visualizer._mode = mode;
+    this._modeBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+  }
+
+  _setTheme(themeName) {
+    const theme = THEMES[themeName];
+    if (theme) {
+      this.visualizer._theme = theme;
+      this._themeDots.forEach(dot => {
+        dot.classList.toggle('active', dot.dataset.theme === themeName);
+      });
+    }
+  }
+
+  _adjustVolume(delta) {
+    let vol = parseFloat(this._volumeSlider.value);
+    vol = Math.max(0, Math.min(1.5, vol + delta));
+    this._volumeSlider.value = vol;
+    this.engine.setVolume(vol);
   }
 }
 
