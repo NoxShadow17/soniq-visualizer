@@ -1101,8 +1101,9 @@ class UIController {
     this._btnHelp      = document.getElementById('btnHelp');
     this._btnCloseHelp = document.getElementById('btnCloseHelp');
 
-    // Fullscreen
+    // Fullscreen & Capture
     this._btnFs        = document.getElementById('btnFs');
+    this._btnCapture   = document.getElementById('btnCapture');
     this._fsTimer      = null;
 
     // Seek Bar
@@ -1258,9 +1259,12 @@ class UIController {
       });
     });
 
-    /* Fullscreen */
+    /* Fullscreen & Capture */
     if (this._btnFs) {
       this._btnFs.addEventListener('click', () => this._toggleFullscreen());
+    }
+    if (this._btnCapture) {
+      this._btnCapture.addEventListener('click', () => this._captureScreenshot());
     }
     document.addEventListener('fullscreenchange', () => {
       const isFs = !!document.fullscreenElement;
@@ -1614,6 +1618,11 @@ class UIController {
         this._toggleFullscreen();
       }
 
+      // C -> Capture Screenshot
+      if (key === 'c') {
+        this._captureScreenshot();
+      }
+
       // T -> Cycle Theme
       if (key === 't') {
         this._cycleTheme();
@@ -1666,6 +1675,17 @@ class UIController {
     vol = Math.max(0, Math.min(1.5, vol + delta));
     this._volumeSlider.value = vol;
     this.engine.setVolume(vol);
+  }
+
+  /* ── Capture ── */
+  _captureScreenshot() {
+    const dataURL = this.canvas.toDataURL('image/png', 1.0);
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = `soniq-capture-${new Date().getTime()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   /* ── Fullscreen ── */
