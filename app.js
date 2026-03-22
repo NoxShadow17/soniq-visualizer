@@ -1213,6 +1213,17 @@ class UIController {
     this._songTitle     = document.getElementById('songTitle');
     this._songTitleText = document.getElementById('songTitleText');
 
+    // Playlist UI
+    this._btnPrev       = document.getElementById('btnPrev');
+    this._btnNext       = document.getElementById('btnNext');
+    this._playlistPanel = document.getElementById('playlistPanel');
+    this._btnPlaylistToggle = document.getElementById('btnPlaylistToggle');
+    this._playlistList  = document.getElementById('playlistList');
+
+    // Playlist State
+    this._playlist      = [];
+    this._playlistIndex = -1;
+
     this._bindEvents();
     this._bindKeyboard();
     this._bindFullscreenIdle();
@@ -1222,8 +1233,7 @@ class UIController {
   _bindEvents() {
     /* File upload */
     this._fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) this._loadFile(file);
+      if (e.target.files.length > 0) this._loadFiles(Array.from(e.target.files));
     });
 
     /* Drag-and-drop */
@@ -1237,12 +1247,19 @@ class UIController {
     this._uploadZone.addEventListener('drop', e => {
       e.preventDefault();
       this._uploadZone.style.borderColor = '';
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('audio/')) this._loadFile(file);
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('audio/'));
+      if (files.length > 0) this._loadFiles(files);
     });
     this._uploadZone.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') this._fileInput.click();
     });
+
+    /* Playlist Controls */
+    this._btnPlaylistToggle.addEventListener('click', () => {
+      this._playlistPanel.classList.toggle('open');
+    });
+    this._btnPrev.addEventListener('click', () => this._playPrev());
+    this._btnNext.addEventListener('click', () => this._playNext());
 
     /* Play / Pause */
     this._btnPlay.addEventListener('click', () => {
@@ -1300,6 +1317,12 @@ class UIController {
         const mode = btn.dataset.freq;
         this._clearDemoBtns();
         this._onMicStop(); // Disable mic if active
+        
+        // Clear playlist
+        this._playlist = [];
+        this._playlistIndex = -1;
+        this._renderPlaylist();
+
         btn.classList.add('active');
         this._activeDemo = mode;
         this._ready = true;
@@ -1433,6 +1456,57 @@ class UIController {
     }
   }
 
+  /* ── Playlist Logic ── */
+  _loadFiles(files) {
+    this._playlist = files;
+    this._playlistIndex = 0;
+    this._renderPlaylist();
+    if (files.length > 1) {
+      this._playlistPanel.classList.add('open');
+    }
+    this._playTrack(this._playlistIndex);
+  }
+
+  _renderPlaylist() {
+    this._playlistList.innerHTML = '';
+    if (this._playlist.length === 0) {
+      this._playlistList.innerHTML = '<div class="playlist-empty">No tracks loaded</div>';
+      this._btnPrev.disabled = true;
+      this._btnNext.disabled = true;
+      return;
+    }
+    this._playlist.forEach((file, index) => {
+      const el = document.createElement('div');
+      el.className = 'playlist-item' + (index === this._playlistIndex ? ' active' : '');
+      el.textContent = file.name.replace(/\.[^/.]+$/, '');
+      el.addEventListener('click', () => this._playTrack(index));
+      this._playlistList.appendChild(el);
+    });
+    this._btnPrev.disabled = this._playlist.length <= 1;
+    this._btnNext.disabled = this._playlist.length <= 1;
+  }
+
+  _playTrack(index) {
+    if (index < 0 || index >= this._playlist.length) return;
+    this._playlistIndex = index;
+    this._renderPlaylist();
+    this._loadFile(this._playlist[index]);
+  }
+
+  _playNext() {
+    if (this._playlist.length === 0) return;
+    let nextIdx = this._playlistIndex + 1;
+    if (nextIdx >= this._playlist.length) nextIdx = 0; // Loop to start
+    this._playTrack(nextIdx);
+  }
+
+  _playPrev() {
+    if (this._playlist.length === 0) return;
+    let prevIdx = this._playlistIndex - 1;
+    if (prevIdx < 0) prevIdx = this._playlist.length - 1; // Loop to end
+    this._playTrack(prevIdx);
+  }
+
   /* ── Song Title ── */
   _updateSongTitle(text) {
     if (!this._songTitle || !this._songTitleText) return;
@@ -1555,11 +1629,15 @@ class UIController {
   }
 
   onEnded() {
-    this._isPlaying = false;
-    this._playIcon.textContent = '▶';
-    setTimeout(() => {
-      if (!this._isPlaying) this.visualizer.stop();
-    }, 500);
+    if (this._playlist.length > 1) {
+      this._playNext();
+    } else {
+      this._isPlaying = false;
+      this._playIcon.textContent = '▶';
+      setTimeout(() => {
+        if (!this._isPlaying) this.visualizer.stop();
+      }, 500);
+    }
   }
 
   /* Band meter + RMS updates (called from Visualizer._frame) */
@@ -1682,6 +1760,9 @@ class UIController {
 
   _onMicStart() {
     this._clearDemoBtns();
+    this._playlist = [];
+    this._playlistIndex = -1;
+    this._renderPlaylist();
     this._isPlaying = true;
     this._btnMic.classList.add('active');
     

@@ -109,8 +109,8 @@
     <section class="controls" aria-label="Playback controls">
 
       <!-- Upload zone -->
-      <label class="upload-zone" id="uploadZone" for="fileInput" tabindex="0" role="button" aria-label="Upload MP3 file">
-        <input type="file" id="fileInput" accept="audio/*" hidden />
+      <label class="upload-zone" id="uploadZone" for="fileInput" tabindex="0" role="button" aria-label="Upload MP3 file(s)">
+        <input type="file" id="fileInput" accept="audio/*" multiple hidden />
         <span class="upload-icon">⬆</span>
         <span class="upload-text">Upload MP3</span>
       </label>
@@ -122,9 +122,19 @@
         <span class="upload-text">BG Video</span>
       </label>
 
+      <!-- Previous Track -->
+      <button class="btn-prev" id="btnPrev" aria-label="Previous Track" disabled>
+        <span>⏮</span>
+      </button>
+
       <!-- Play / Pause -->
       <button class="btn-play" id="btnPlay" aria-label="Play" disabled>
         <span class="play-icon" id="playIcon">▶</span>
+      </button>
+
+      <!-- Next Track -->
+      <button class="btn-next" id="btnNext" aria-label="Next Track" disabled>
+        <span>⏭</span>
       </button>
 
       <!-- Stop -->
@@ -250,6 +260,17 @@
 
   <!-- Drop detection flash overlay -->
   <div id="dropFlash" aria-hidden="true"></div>
+
+  <!-- Playlist Sidebar/Panel -->
+  <div class="playlist-panel" id="playlistPanel">
+    <div class="playlist-header">
+      <h3 class="playlist-title">Playlist</h3>
+      <button class="btn-playlist-toggle" id="btnPlaylistToggle" aria-label="Toggle Playlist">☰</button>
+    </div>
+    <div class="playlist-list" id="playlistList">
+      <div class="playlist-empty">No tracks loaded</div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
