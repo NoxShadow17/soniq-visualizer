@@ -1578,7 +1578,10 @@ class UIController {
       // Space -> Toggle Play/Pause
       if (e.code === 'Space') {
         e.preventDefault();
-        if (this._ready) this.play();
+        if (this._ready) {
+          if (this._isPlaying) this._pause();
+          else this.play();
+        }
       }
 
       // S -> Stop
