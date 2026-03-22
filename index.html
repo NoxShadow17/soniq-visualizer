@@ -56,15 +56,20 @@
       <span class="time-label" id="timeTotal">0:00</span>
     </div>
 
-    <!-- Mode switcher -->
-    <div class="mode-switcher" id="modeSwitcher" role="tablist" aria-label="Visualizer mode">
-      <button class="btn-mode active" data-mode="bars"      role="tab" aria-selected="true">⬛ Bars</button>
-      <button class="btn-mode"        data-mode="wave"      role="tab" aria-selected="false">〰 Wave</button>
-      <button class="btn-mode"        data-mode="circular"  role="tab" aria-selected="false">◎ Radial</button>
-      <button class="btn-mode"        data-mode="lissajous" role="tab" aria-selected="false">∞ Lissajous</button>
-      <button class="btn-mode"        data-mode="perspective" role="tab" aria-selected="false">📐 3D Perspective</button>
-      <button class="btn-mode"        data-mode="oscilloscope" role="tab" aria-selected="false">📟 Oscilloscope</button>
-    </div>
+    <!-- Mode switcher header -->
+    <header class="top-bar">
+      <div class="mode-switcher" id="modeSwitcher" role="tablist" aria-label="Visualizer mode">
+        <button class="btn-mode active" data-mode="bars"      role="tab" aria-selected="true">⬛ Bars</button>
+        <button class="btn-mode"        data-mode="wave"      role="tab" aria-selected="false">〰 Wave</button>
+        <button class="btn-mode"        data-mode="circular"  role="tab" aria-selected="false">◎ Radial</button>
+        <button class="btn-mode"        data-mode="lissajous" role="tab" aria-selected="false">∞ Lissajous</button>
+        <button class="btn-mode"        data-mode="perspective" role="tab" aria-selected="false">📐 3D Perspective</button>
+        <button class="btn-mode"        data-mode="oscilloscope" role="tab" aria-selected="false">📟 Oscilloscope</button>
+      </div>
+      <button class="btn-fs" id="btnFs" title="Toggle Fullscreen (F)" aria-label="Toggle Fullscreen">
+        <span class="fs-icon">⛶</span>
+      </button>
+    </header>
 
     <!-- Band meters -->
     <div class="band-meters" id="bandMeters" aria-label="Frequency band meters">
@@ -184,7 +189,7 @@
       </div>
     </div>
 
-    <!-- Volume / RMS indicator -->
+    <!-- Volume indicator -->
     <div class="rms-row" aria-label="Volume indicator">
       <span class="rms-label">VOL</span>
       <div class="rms-track">
@@ -192,8 +197,6 @@
       </div>
       <span class="rms-value" id="rmsValue">0 dB</span>
     </div>
-
-    </footer>
 
     <!-- Keyboard Help -->
     <div class="help-section">
@@ -211,12 +214,17 @@
             <li><kbd>S</kbd> <span>Stop</span></li>
             <li><kbd>M</kbd> <span>Live Microphone</span></li>
             <li><kbd>1-6</kbd> <span>Switch Mode</span></li>
+            <li><kbd>F</kbd> <span>Fullscreen</span></li>
             <li><kbd>T</kbd> <span>Cycle Theme</span></li>
             <li><kbd>↑ / ↓</kbd> <span>Volume</span></li>
           </ul>
         </div>
       </div>
     </div>
+
+    <footer class="footer">
+      <p>&copy; 2026 SONIQ Visualizer — Built with Neon & Glass</p>
+    </footer>
 
   </div>
 

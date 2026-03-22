@@ -1101,6 +1101,10 @@ class UIController {
     this._btnHelp      = document.getElementById('btnHelp');
     this._btnCloseHelp = document.getElementById('btnCloseHelp');
 
+    // Fullscreen
+    this._btnFs        = document.getElementById('btnFs');
+    this._fsTimer      = null;
+
     // Seek Bar
     this._seekBar     = document.getElementById('seekBar');
     this._seekFill    = document.getElementById('seekFill');
@@ -1114,6 +1118,7 @@ class UIController {
 
     this._bindEvents();
     this._bindKeyboard();
+    this._bindFullscreenIdle();
     this._startIdleLoop();
   }
 
@@ -1251,6 +1256,16 @@ class UIController {
         btn.classList.add('active');
         this.visualizer.setTheme(btn.dataset.theme);
       });
+    });
+
+    /* Fullscreen */
+    if (this._btnFs) {
+      this._btnFs.addEventListener('click', () => this._toggleFullscreen());
+    }
+    document.addEventListener('fullscreenchange', () => {
+      const isFs = !!document.fullscreenElement;
+      this._btnFs.classList.toggle('active', isFs);
+      if (!isFs) this._wrapper.classList.remove('user-inactive');
     });
 
     /* Mode switcher */
@@ -1594,6 +1609,11 @@ class UIController {
         this._toggleMic();
       }
 
+      // F -> Toggle Fullscreen
+      if (key === 'f') {
+        this._toggleFullscreen();
+      }
+
       // T -> Cycle Theme
       if (key === 't') {
         this._cycleTheme();
@@ -1646,6 +1666,33 @@ class UIController {
     vol = Math.max(0, Math.min(1.5, vol + delta));
     this._volumeSlider.value = vol;
     this.engine.setVolume(vol);
+  }
+
+  /* ── Fullscreen ── */
+  _toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      this._wrapper.requestFullscreen().catch(err => {
+        console.warn(`Fullscreen error: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  _bindFullscreenIdle() {
+    const resetTimer = () => {
+      this._wrapper.classList.remove('user-inactive');
+      if (this._fsTimer) clearTimeout(this._fsTimer);
+      if (document.fullscreenElement) {
+        this._fsTimer = setTimeout(() => {
+          this._wrapper.classList.add('user-inactive');
+        }, 3000);
+      }
+    };
+
+    this._wrapper.addEventListener('mousemove', resetTimer);
+    this._wrapper.addEventListener('mousedown', resetTimer);
+    this._wrapper.addEventListener('touchstart', resetTimer);
   }
 }
 
