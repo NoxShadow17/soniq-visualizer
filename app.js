@@ -1078,6 +1078,8 @@ class UIController {
 
     this._wrapper    = document.getElementById('visualizer-wrapper');
     this._demoBtns   = document.querySelectorAll('.btn-demo');
+    this._modeBtns   = document.querySelectorAll('.btn-mode');
+    this._themeDots  = document.querySelectorAll('.theme-dot');
 
     // Background Video
     this._bgVideo         = document.getElementById('bgVideo');
