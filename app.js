@@ -1623,16 +1623,15 @@ class UIController {
   }
 
   _setMode(mode) {
-    this.visualizer._mode = mode;
+    this.visualizer.setMode(mode);
     this._modeBtns.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
   }
 
   _setTheme(themeName) {
-    const theme = THEMES[themeName];
-    if (theme) {
-      this.visualizer._theme = theme;
+    if (THEMES[themeName]) {
+      this.visualizer.setTheme(themeName);
       this._themeDots.forEach(dot => {
         dot.classList.toggle('active', dot.dataset.theme === themeName);
       });
