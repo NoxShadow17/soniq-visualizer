@@ -1679,7 +1679,27 @@ class UIController {
 
   /* ── Capture ── */
   _captureScreenshot() {
-    const dataURL = this.canvas.toDataURL('image/png', 1.0);
+    const offscreen = document.createElement('canvas');
+    offscreen.width = this.canvas.width;
+    offscreen.height = this.canvas.height;
+    const ctx = offscreen.getContext('2d');
+
+    // Draw background color
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+
+    // Draw video background if active
+    if (this._bgVideo && !this._bgVideo.hidden) {
+      const opacity = parseFloat(this._bgVideo.style.opacity);
+      ctx.globalAlpha = isNaN(opacity) ? 1.0 : opacity;
+      ctx.drawImage(this._bgVideo, 0, 0, offscreen.width, offscreen.height);
+      ctx.globalAlpha = 1.0;
+    }
+
+    // Draw visualizer canvas
+    ctx.drawImage(this.canvas, 0, 0);
+
+    const dataURL = offscreen.toDataURL('image/png', 1.0);
     const a = document.createElement('a');
     a.href = dataURL;
     a.download = `soniq-capture-${new Date().getTime()}.png`;
