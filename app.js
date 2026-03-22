@@ -444,6 +444,38 @@ class DropDetector {
   }
 }
 
+/* ─────────────────────────────────────────────
+   BEAT DETECTOR (Energy-based rhythmic sync)
+───────────────────────────────────────────── */
+class BeatDetector {
+  constructor() {
+    this.history = [];
+    this.historyMax = 40;  // ~0.6s history
+    this.threshold = 1.35; // Kick sensitivity
+    this.lastBeat = 0;
+    this.cooldown = 180;   // ms between beats
+  }
+
+  update(energy) {
+    if (energy < 0.01) return false;
+
+    // Calculate local average
+    let sum = 0;
+    for (let i = 0; i < this.history.length; i++) sum += this.history[i];
+    const avg = this.history.length > 0 ? sum / this.history.length : 0;
+
+    const now = performance.now();
+    const isBeat = energy > avg * this.threshold && (now - this.lastBeat > this.cooldown);
+
+    if (isBeat) this.lastBeat = now;
+
+    // Update history
+    this.history.push(energy);
+    if (this.history.length > this.historyMax) this.history.shift();
+
+    return isBeat;
+  }
+}
 
 class Visualizer {
   constructor(canvas, engine) {
@@ -467,6 +499,9 @@ class Visualizer {
     this._mode          = 'bars';
     this._theme         = THEMES.neon;
     this._dropDetector = new DropDetector();
+    this._beatDetector = new BeatDetector();
+    this._isRecording   = false;
+    this._beatFactor    = 0; // for pulse scaling
 
     this._initResize();
   }
@@ -582,8 +617,26 @@ class Visualizer {
     const drop = this._dropDetector.update(this._rms);
     if (drop) ui.onDrop(drop, W, H, this);
 
+    // ── Beat Detection ──
+    const isBeat = this._beatDetector.update(this._bassAvg);
+    if (isBeat) {
+      this._beatFactor = 1.0;
+      // Spawn central burst
+      this.spawnBurst(W/2, H/2);
+    }
+    this._beatFactor = lerp(this._beatFactor, 0, 0.1);
+
     /* ── Clear with bass-driven bloom glow ── */
     ctx.clearRect(0, 0, W, H);
+
+    // Apply rhythmic pulse scale
+    if (this._beatFactor > 0.01) {
+      const scale = 1.0 + this._beatFactor * 0.03;
+      ctx.save();
+      ctx.translate(W/2, H/2);
+      ctx.scale(scale, scale);
+      ctx.translate(-W/2, -H/2);
+    }
 
     /* ── Include manual background if recording ── */
     if (this._isRecording && ui) {
@@ -638,6 +691,10 @@ class Visualizer {
       p.update();
       if (p.dead) { this.particles.splice(i, 1); }
       else { p.draw(ctx); }
+    }
+
+    if (this._beatFactor > 0.01) {
+      ctx.restore();
     }
   }
 
@@ -1053,6 +1110,16 @@ class Visualizer {
     ctx.clearRect(0, 0, this.W, this.H);
   }
 
+  spawnBurst(x, y) {
+    const th = this._theme;
+    const colors = th.wave;
+    const count = 18 + Math.floor(Math.random() * 10);
+    for (let i = 0; i < count; i++) {
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      this.particles.push(new Particle(x, y, color));
+    }
+  }
+
   _roundRect(ctx, x, y, w, h, r) {
     if (h < r * 2) r = h / 2;
     if (h <= 0) return;
@@ -1311,6 +1378,14 @@ class UIController {
         btn.setAttribute('aria-selected', 'true');
         this.visualizer.setMode(btn.dataset.mode);
       });
+    });
+
+    /* Click-to-spawn particles */
+    this.canvas.addEventListener('mousedown', e => {
+      const rect = this.canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      this.visualizer.spawnBurst(x, y);
     });
   }
 
