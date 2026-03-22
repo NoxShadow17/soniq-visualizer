@@ -612,6 +612,7 @@ class Visualizer {
     // Expose to UI
     ui.updateBands(this._bassAvg, lerp(0, midsAvg, 0.12 + midsAvg * 0.88), this._trebleAvg);
     ui.updateRMS(this._rms);
+    ui._updateSeekBar();
 
     // ── Drop Detection ──
     const drop = this._dropDetector.update(this._rms);
@@ -1256,7 +1257,8 @@ class UIController {
 
     /* Playlist Controls */
     this._btnPlaylistToggle.addEventListener('click', () => {
-      this._playlistPanel.classList.toggle('open');
+      const isOpen = this._playlistPanel.classList.toggle('open');
+      document.querySelector('.app-shell').style.transform = isOpen ? 'translateX(-150px)' : 'none';
     });
     this._btnPrev.addEventListener('click', () => this._playPrev());
     this._btnNext.addEventListener('click', () => this._playNext());
@@ -1463,6 +1465,7 @@ class UIController {
     this._renderPlaylist();
     if (files.length > 1) {
       this._playlistPanel.classList.add('open');
+      document.querySelector('.app-shell').style.transform = 'translateX(-150px)';
     }
     this._playTrack(this._playlistIndex);
   }
