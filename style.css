@@ -467,7 +467,7 @@ html, body {
 }
 .demo-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; }
 .demo-buttons { display: flex; gap: 8px; }
-.btn-demo {
+.btn-demo, .btn-mic {
   padding: 7px 16px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -479,21 +479,28 @@ html, body {
   cursor: pointer;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  transition: background 0.25s, border-color 0.25s, box-shadow 0.25s, transform 0.15s, color 0.25s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.btn-demo:hover {
+.btn-demo:hover, .btn-mic:hover {
   transform: translateY(-2px);
 }
-#demo1:hover { background: rgba(255,45,107,0.12);  border-color: var(--bass);   box-shadow: 0 0 14px var(--bass-glow);   color: var(--bass); }
-#demo2:hover { background: rgba(180,77,255,0.12);  border-color: var(--mids);   box-shadow: 0 0 14px var(--mids-glow);   color: var(--mids); }
-#demo3:hover { background: rgba(0,229,255,0.12);   border-color: var(--treble); box-shadow: 0 0 14px var(--treble-glow); color: var(--treble); }
-.btn-demo.active {
-  transform: translateY(-2px);
-  color: #fff;
+#demo1:hover, #demo1.active { background: rgba(255,45,107,0.12);  border-color: var(--bass);   box-shadow: 0 0 14px var(--bass-glow);   color: var(--bass); }
+#demo2:hover, #demo2.active { background: rgba(180,77,255,0.12);  border-color: var(--mids);   box-shadow: 0 0 14px var(--mids-glow);   color: var(--mids); }
+#demo3:hover, #demo3.active { background: rgba(0,229,255,0.12);   border-color: var(--treble); box-shadow: 0 0 14px var(--treble-glow); color: var(--treble); }
+
+.btn-mic:hover, .btn-mic.active {
+  background: rgba(255,204,0,0.12);
+  border-color: #ffcc00;
+  box-shadow: 0 0 14px rgba(255,204,0,0.4);
+  color: #ffcc00;
 }
-#demo1.active { background: rgba(255,45,107,0.18);  border-color: var(--bass);   box-shadow: 0 0 18px var(--bass-glow); }
-#demo2.active { background: rgba(180,77,255,0.18);  border-color: var(--mids);   box-shadow: 0 0 18px var(--mids-glow); }
-#demo3.active { background: rgba(0,229,255,0.18);   border-color: var(--treble); box-shadow: 0 0 18px var(--treble-glow); }
+.btn-mic.active {
+  animation: mic-pulse 2s infinite;
+}
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255,204,0,0.4); }
+  50%       { box-shadow: 0 0 24px rgba(255,204,0,0.6); }
+}
 
 /* ── RMS row ── */
 .rms-row {

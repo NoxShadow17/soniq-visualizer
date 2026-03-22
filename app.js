@@ -64,6 +64,8 @@ class AudioEngine {
     this.gainNode   = null;
     this.filters    = [];     // 8-band EQ filter chain
     this.buffer     = null;
+    this.micStream  = null;
+    this.micNode    = null;
 
     this._freqData  = null;   // Uint8Array — frequency domain
     this._timeData  = null;   // Float32Array — time domain (for RMS)
@@ -173,6 +175,7 @@ class AudioEngine {
   stop() {
     this._stopSource();
     this._stopDemoOscs();
+    this.stopMic();
     this.isPlaying = false;
     this.pausedAt  = 0;
     this.startedAt = 0;
@@ -1060,6 +1063,9 @@ class UIController {
     this._eqSliders  = document.querySelectorAll('.eq-slider');
     this._btnResetEQ = document.getElementById('btnResetEQ');
 
+    // Mic
+    this._btnMic = document.getElementById('btnMic');
+
     // Seek Bar
     this._seekBar     = document.getElementById('seekBar');
     this._seekFill    = document.getElementById('seekFill');
@@ -1155,12 +1161,18 @@ class UIController {
       btn.addEventListener('click', () => {
         const mode = btn.dataset.freq;
         this._clearDemoBtns();
+        this._onMicStop(); // Disable mic if active
         btn.classList.add('active');
         this._activeDemo = mode;
         this._ready = true;
         this.engine.startDemoMode(mode);
         this._onPlay();
       });
+    });
+
+    /* Mic */
+    this._btnMic.addEventListener('click', () => {
+      this._toggleMic();
     });
 
     /* Resize */
@@ -1203,6 +1215,37 @@ class UIController {
         this.visualizer.setMode(btn.dataset.mode);
       });
     });
+  }
+
+  /* ── Microphone ── */
+  async startMic() {
+    this._ensureContext();
+    this.stop(); // Stop everything before starting Mic
+
+    try {
+      this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.micNode = this.ctx.createMediaStreamSource(this.micStream);
+      
+      // Connect to start of EQ chain
+      this.micNode.connect(this.filters[0]);
+      
+      this.isPlaying = true; // For Visualizer loop
+      return true;
+    } catch (err) {
+      console.error('Microphone error:', err);
+      return false;
+    }
+  }
+
+  stopMic() {
+    if (this.micNode) {
+      this.micNode.disconnect();
+      this.micNode = null;
+    }
+    if (this.micStream) {
+      this.micStream.getTracks().forEach(track => track.stop());
+      this.micStream = null;
+    }
   }
 
   async _loadFile(file) {
@@ -1259,6 +1302,7 @@ class UIController {
 
   _stop() {
     this.engine.stop();
+    this._onMicStop();
     this._clearDemoBtns();
     this._activeDemo = null;
     this._isPlaying  = false;
@@ -1419,6 +1463,58 @@ class UIController {
       requestAnimationFrame(idle);
     };
     requestAnimationFrame(idle);
+  }
+
+  /* ── Microphone methods ── */
+  async _toggleMic() {
+    const isActive = this._btnMic.classList.contains('active');
+    
+    if (isActive) {
+      this._onMicStop();
+      this.engine.stopMic();
+    } else {
+      const success = await this.engine.startMic();
+      if (success) {
+        this._onMicStart();
+      } else {
+        alert('Could not access microphone. Please check permissions.');
+      }
+    }
+  }
+
+  _onMicStart() {
+    this._clearDemoBtns();
+    this._isPlaying = true;
+    this._btnMic.classList.add('active');
+    
+    // Disable file-playback controls
+    this._btnPlay.disabled = true;
+    this._playIcon.textContent = '▶';
+    this._updateUploadLabel('● LIVE MICROPHONE');
+    this._uploadZone.style.pointerEvents = 'none';
+    this._uploadZone.style.opacity = '0.5';
+    
+    // Hide seek bar (not used for mic)
+    document.querySelector('.seek-container').style.opacity = '0.3';
+    document.querySelector('.seek-container').style.pointerEvents = 'none';
+    
+    this.visualizer.start();
+  }
+
+  _onMicStop() {
+    this._isPlaying = false;
+    this._btnMic.classList.remove('active');
+    
+    // Enable file-playback controls
+    this._btnPlay.disabled = !this._ready;
+    this._uploadZone.style.pointerEvents = 'auto';
+    this._uploadZone.style.opacity = '1';
+    if (!this._ready) this._updateUploadLabel('Upload MP3');
+    else this._updateUploadLabel('♬ ' + this._currentFileName);
+    
+    // Restore seek bar
+    document.querySelector('.seek-container').style.opacity = '1';
+    document.querySelector('.seek-container').style.pointerEvents = 'auto';
   }
 }
 
