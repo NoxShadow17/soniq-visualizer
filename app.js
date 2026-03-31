@@ -13,24 +13,24 @@
 /* ─────────────────────────────────────────────
    CONSTANTS
 ───────────────────────────────────────────── */
-const FFT_SIZE     = 2048;
-const SMOOTHING    = 0.82;      // AnalyserNode smoothingTimeConstant (0–1)
-const LERP_SPEED   = 0.14;      // Per-frame lerp factor for bar heights
+const FFT_SIZE = 2048;
+const SMOOTHING = 0.82;      // AnalyserNode smoothingTimeConstant (0–1)
+const LERP_SPEED = 0.14;      // Per-frame lerp factor for bar heights
 const PEAK_HOLD_MS = 1100;      // How long peak cap stays at the top (ms)
 const PEAK_GRAVITY = 0.55;      // px/frame² – gravity for falling cap
-const BAR_COUNT    = 90;        // Bars each side (mirrored → 90 × 2)
-const MIN_DB       = -80;       // dBFS floor
-const MAX_DB       = 0;         // dBFS ceiling
+const BAR_COUNT = 90;        // Bars each side (mirrored → 90 × 2)
+const MIN_DB = -80;       // dBFS floor
+const MAX_DB = 0;         // dBFS ceiling
 
 /* ─────────────────────────────────────────────
    COLOUR THEMES
 ───────────────────────────────────────────── */
 const THEMES = {
-  neon:   { hueStart:330, hueEnd:180, sat:90, wave:['#ff2d6b','#b44dff','#7c3bff','#00e5ff'], bloom1:[255,45,107],  bloom2:[124,59,255],  core:'#b44dff' },
-  sunset: { hueStart:15,  hueEnd:52,  sat:90, wave:['#ff3300','#ff6600','#ff9900','#ffcc00'], bloom1:[255,100,0],   bloom2:[200,50,0],    core:'#ff7700' },
-  matrix: { hueStart:105, hueEnd:145, sat:85, wave:['#00ff41','#00dd30','#00bb28','#39ff14'], bloom1:[0,210,60],    bloom2:[0,140,30],    core:'#00ff41' },
-  ocean:  { hueStart:175, hueEnd:248, sat:90, wave:['#00e5ff','#0288d1','#1565c0','#7c4dff'], bloom1:[0,180,255],   bloom2:[0,80,200],    core:'#2979ff' },
-  mono:   { hueStart:0,   hueEnd:0,   sat:0,  wave:['#555','#888','#bbb','#eee'],             bloom1:[160,160,160], bloom2:[100,100,100], core:'#ccc'    },
+  neon: { hueStart: 330, hueEnd: 180, sat: 90, wave: ['#ff2d6b', '#b44dff', '#7c3bff', '#00e5ff'], bloom1: [255, 45, 107], bloom2: [124, 59, 255], core: '#b44dff' },
+  sunset: { hueStart: 15, hueEnd: 52, sat: 90, wave: ['#ff3300', '#ff6600', '#ff9900', '#ffcc00'], bloom1: [255, 100, 0], bloom2: [200, 50, 0], core: '#ff7700' },
+  matrix: { hueStart: 105, hueEnd: 145, sat: 85, wave: ['#00ff41', '#00dd30', '#00bb28', '#39ff14'], bloom1: [0, 210, 60], bloom2: [0, 140, 30], core: '#00ff41' },
+  ocean: { hueStart: 175, hueEnd: 248, sat: 90, wave: ['#00e5ff', '#0288d1', '#1565c0', '#7c4dff'], bloom1: [0, 180, 255], bloom2: [0, 80, 200], core: '#2979ff' },
+  mono: { hueStart: 0, hueEnd: 0, sat: 0, wave: ['#555', '#888', '#bbb', '#eee'], bloom1: [160, 160, 160], bloom2: [100, 100, 100], core: '#ccc' },
 };
 
 /* ─────────────────────────────────────────────
@@ -58,30 +58,30 @@ const binToHz = (bin, sampleRate, fftSize) => (bin * sampleRate) / fftSize;
 ───────────────────────────────────────────── */
 class AudioEngine {
   constructor() {
-    this.ctx        = null;
-    this.analyser   = null;
-    this.source     = null;
-    this.gainNode   = null;
-    this.filters    = [];     // 8-band EQ filter chain
-    this.buffer     = null;
-    this.micStream  = null;
-    this.micNode    = null;
+    this.ctx = null;
+    this.analyser = null;
+    this.source = null;
+    this.gainNode = null;
+    this.filters = [];     // 8-band EQ filter chain
+    this.buffer = null;
+    this.micStream = null;
+    this.micNode = null;
 
-    this.convolver  = null;
-    this.wetGain    = null;
-    this.dryGain    = null;
+    this.convolver = null;
+    this.wetGain = null;
+    this.dryGain = null;
 
-    this._freqData  = null;   // Uint8Array — frequency domain
-    this._timeData  = null;   // Float32Array — time domain (for RMS)
+    this._freqData = null;   // Uint8Array — frequency domain
+    this._timeData = null;   // Float32Array — time domain (for RMS)
 
-    this.isPlaying  = false;
-    this.startedAt  = 0;
-    this.pausedAt   = 0;
+    this.isPlaying = false;
+    this.startedAt = 0;
+    this.pausedAt = 0;
 
     // Demo oscillator synthesizer state
-    this._demoNode  = null;
-    this._demoMode  = null;
-    this._demoOscs  = [];
+    this._demoNode = null;
+    this._demoMode = null;
+    this._demoOscs = [];
   }
 
   _ensureContext() {
@@ -129,7 +129,7 @@ class AudioEngine {
 
       this.gainNode.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
-      
+
       this.streamDestination = this.ctx.createMediaStreamDestination();
       this.analyser.connect(this.streamDestination);
 
@@ -185,12 +185,12 @@ class AudioEngine {
     this._stopSource();
     this.source = this.ctx.createBufferSource();
     this.source.buffer = this.buffer;
-    
+
     // Connect to START of EQ chain
     this.source.connect(this.filters[0]);
-    
+
     this.source.loop = false;
-    
+
     const startOffset = (offset !== null) ? offset : this.pausedAt;
     this.source.start(0, startOffset);
     this.startedAt = this.ctx.currentTime - startOffset;
@@ -222,14 +222,14 @@ class AudioEngine {
     this._stopDemoOscs();
     this.stopMic();
     this.isPlaying = false;
-    this.pausedAt  = 0;
+    this.pausedAt = 0;
     this.startedAt = 0;
   }
 
   _stopSource() {
     if (this.source) {
       this.source.onended = null; // Prevent race condition when stopping to seek
-      try { this.source.stop(); } catch(_) {}
+      try { this.source.stop(); } catch (_) { }
       this.source.disconnect();
       this.source = null;
     }
@@ -252,7 +252,7 @@ class AudioEngine {
 
     const make = (type, freq, gain) => {
       const osc = this.ctx.createOscillator();
-      const g   = this.ctx.createGain();
+      const g = this.ctx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
       g.gain.value = gain;
@@ -264,31 +264,31 @@ class AudioEngine {
 
     if (mode === 'bass') {
       // Deep sub-bass thumper with overtone
-      make('sine',     55,  0.55);
+      make('sine', 55, 0.55);
       make('triangle', 110, 0.25);
-      make('sine',     82,  0.20);
+      make('sine', 82, 0.20);
       // LFO-modulate gain for that kick feel
       this._modulateDemo(0, 1.6, 0.8);
 
     } else if (mode === 'mids') {
       make('sawtooth', 220, 0.15);
-      make('square',   330, 0.10);
-      make('sine',     440, 0.20);
-      make('sine',     528, 0.12);
+      make('square', 330, 0.10);
+      make('sine', 440, 0.20);
+      make('sine', 528, 0.12);
       this._modulateDemo(1, 3.2, 0.5);
 
     } else if (mode === 'treble') {
-      make('sine',     2200, 0.18);
-      make('sine',     4400, 0.12);
+      make('sine', 2200, 0.18);
+      make('sine', 4400, 0.12);
       make('triangle', 8800, 0.08);
-      make('square',   3300, 0.06);
+      make('square', 3300, 0.06);
       this._modulateDemo(2, 7.0, 0.4);
     }
   }
 
   _modulateDemo(oscIdx, rate, depth) {
     if (!this._demoOscs[oscIdx]) return;
-    const lfo  = this.ctx.createOscillator();
+    const lfo = this.ctx.createOscillator();
     const lfoG = this.ctx.createGain();
     lfo.frequency.value = rate;
     lfoG.gain.value = depth;
@@ -300,8 +300,8 @@ class AudioEngine {
 
   _stopDemoOscs() {
     for (const { osc } of this._demoOscs) {
-      try { osc.stop(); } catch(_) {}
-      try { osc.disconnect(); } catch(_) {}
+      try { osc.stop(); } catch (_) { }
+      try { osc.disconnect(); } catch (_) { }
     }
     this._demoOscs = [];
   }
@@ -319,10 +319,10 @@ class AudioEngine {
     return computeRMS(this._timeData);
   }
 
-  get duration()    { return this.buffer ? this.buffer.duration : 0; }
+  get duration() { return this.buffer ? this.buffer.duration : 0; }
   get currentTime() {
-     if (!this.isPlaying || !this.ctx) return this.pausedAt;
-     return Math.min(this.duration, this.ctx.currentTime - this.startedAt);
+    if (!this.isPlaying || !this.ctx) return this.pausedAt;
+    return Math.min(this.duration, this.ctx.currentTime - this.startedAt);
   }
 
   setVolume(val) {
@@ -339,8 +339,8 @@ class AudioEngine {
     }
   }
 
-  get sampleRate()     { return this.ctx ? this.ctx.sampleRate : 44100; }
-  get binCount()       { return this.analyser ? this.analyser.frequencyBinCount : 0; }
+  get sampleRate() { return this.ctx ? this.ctx.sampleRate : 44100; }
+  get binCount() { return this.analyser ? this.analyser.frequencyBinCount : 0; }
   get timeDomainData() { return this._timeData; }  // already current after getRMS()
 
   /* ── Microphone ── */
@@ -377,14 +377,14 @@ class AudioEngine {
 ───────────────────────────────────────────── */
 class Particle {
   constructor(x, y, color) {
-    this.x  = x;
-    this.y  = y;
+    this.x = x;
+    this.y = y;
     this.vx = (Math.random() - 0.5) * 4;
     this.vy = -(Math.random() * 3 + 1);
-    this.life   = 1.0;
-    this.decay  = Math.random() * 0.03 + 0.02;
+    this.life = 1.0;
+    this.decay = Math.random() * 0.03 + 0.02;
     this.radius = Math.random() * 2.5 + 0.5;
-    this.color  = color;
+    this.color = color;
   }
   update() {
     this.x += this.vx;
@@ -399,7 +399,7 @@ class Particle {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = this.color;
-    ctx.shadowBlur  = 6;
+    ctx.shadowBlur = 6;
     ctx.shadowColor = this.color;
     ctx.fill();
     ctx.restore();
@@ -415,21 +415,21 @@ class Particle {
 class DropDetector {
   constructor() {
     // Tuning
-    this.QUIET_THRESHOLD  = 0.045;  // RMS below this → considered quiet
-    this.SPIKE_RATIO      = 3.2;    // fast/slow ratio needed to call a drop
-    this.QUIET_MIN_MS     = 300;    // must be quiet for at least this long
-    this.COOLDOWN_MS      = 800;    // min gap between consecutive drops
+    this.QUIET_THRESHOLD = 0.045;  // RMS below this → considered quiet
+    this.SPIKE_RATIO = 3.2;    // fast/slow ratio needed to call a drop
+    this.QUIET_MIN_MS = 300;    // must be quiet for at least this long
+    this.COOLDOWN_MS = 800;    // min gap between consecutive drops
 
-    this._slowRMS         = 0;      // very slow baseline tracker
-    this._quietSince      = null;   // timestamp when quiet period started
-    this._lastDrop        = 0;      // timestamp of last detected drop
-    this._colorIdx        = 0;      // cycles through accent colors
+    this._slowRMS = 0;      // very slow baseline tracker
+    this._quietSince = null;   // timestamp when quiet period started
+    this._lastDrop = 0;      // timestamp of last detected drop
+    this._colorIdx = 0;      // cycles through accent colors
 
     // Colors cycle: bass pink → mids purple → treble cyan
     this._colors = [
-      { bg: 'rgba(255,45,107,0.22)',  glow: '#ff2d6b' },
+      { bg: 'rgba(255,45,107,0.22)', glow: '#ff2d6b' },
       { bg: 'rgba(180,77,255,0.20)', glow: '#b44dff' },
-      { bg: 'rgba(0,229,255,0.18)',  glow: '#00e5ff' },
+      { bg: 'rgba(0,229,255,0.18)', glow: '#00e5ff' },
     ];
   }
 
@@ -453,8 +453,8 @@ class DropDetector {
 
     // Detect spike: loud enough, ratio high enough, was quiet long enough
     const quietDuration = this._quietSince !== null ? now - this._quietSince : 0;
-    const ratio         = this._slowRMS > 0.001 ? fastRMS / this._slowRMS : 0;
-    const cooledDown    = now - this._lastDrop > this.COOLDOWN_MS;
+    const ratio = this._slowRMS > 0.001 ? fastRMS / this._slowRMS : 0;
+    const cooledDown = now - this._lastDrop > this.COOLDOWN_MS;
 
     // The spike check: quiet period ended in the PREVIOUS frame, now loud
     // We detect the transition: quietSince is null (just went loud) AND ratio is big
@@ -521,29 +521,29 @@ class BeatDetector {
 
 class Visualizer {
   constructor(canvas, engine) {
-    this.canvas  = canvas;
-    this.ctx2d   = canvas.getContext('2d');
-    this.engine  = engine;
+    this.canvas = canvas;
+    this.ctx2d = canvas.getContext('2d');
+    this.engine = engine;
 
-    this.barCount  = BAR_COUNT;
-    this.smoothed  = new Float32Array(this.barCount); // Lerp-smoothed heights
-    this.peaks     = new Float32Array(this.barCount); // Peak cap heights
-    this.peakVels  = new Float32Array(this.barCount); // Falling velocities
-    this.peakHold  = new Array(this.barCount).fill(0); // Timestamps
+    this.barCount = BAR_COUNT;
+    this.smoothed = new Float32Array(this.barCount); // Lerp-smoothed heights
+    this.peaks = new Float32Array(this.barCount); // Peak cap heights
+    this.peakVels = new Float32Array(this.barCount); // Falling velocities
+    this.peakHold = new Array(this.barCount).fill(0); // Timestamps
 
     this.particles = [];
-    this._rafId    = null;
-    this._running  = false;
-    this._rms      = 0;   // smoothed RMS
-    this._bassAvg  = 0;   // smoothed bass
+    this._rafId = null;
+    this._running = false;
+    this._rms = 0;   // smoothed RMS
+    this._bassAvg = 0;   // smoothed bass
     this._trebleAvg = 0;  // smoothed treble
 
-    this._mode          = 'bars';
-    this._theme         = THEMES.neon;
+    this._mode = 'bars';
+    this._theme = THEMES.neon;
     this._dropDetector = new DropDetector();
     this._beatDetector = new BeatDetector();
-    this._isRecording   = false;
-    this._beatFactor    = 0; // for pulse scaling
+    this._isRecording = false;
+    this._beatFactor = 0; // for pulse scaling
 
     this._initResize();
   }
@@ -557,17 +557,17 @@ class Visualizer {
 
   resize() {
     const wrapper = this.canvas.parentElement;
-    const w = wrapper.clientWidth  || wrapper.offsetWidth  || 600;
+    const w = wrapper.clientWidth || wrapper.offsetWidth || 600;
     const h = wrapper.clientHeight || wrapper.offsetHeight || 300;
-    this.canvas.width  = w * devicePixelRatio;
+    this.canvas.width = w * devicePixelRatio;
     this.canvas.height = h * devicePixelRatio;
-    this.canvas.style.width  = w + 'px';
+    this.canvas.style.width = w + 'px';
     this.canvas.style.height = h + 'px';
     // Resetting canvas dimensions clears the transform, so re-apply scale
     this.ctx2d.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
   }
 
-  get W() { return this.canvas.width  / devicePixelRatio; }
+  get W() { return this.canvas.width / devicePixelRatio; }
   get H() { return this.canvas.height / devicePixelRatio; }
 
   start() {
@@ -611,17 +611,17 @@ class Visualizer {
 
     const ctx = this.ctx2d;
     const freq = this.engine.getFreqData();    // Uint8[0..255] × binCount
-    const rms  = this.engine.getRMS();
+    const rms = this.engine.getRMS();
 
     // Smooth RMS
     this._rms = lerp(this._rms, rms, 0.12);
 
     /* Build bar heights from frequency bins
        We map bins logarithmically for a perceptual spread */
-    const bins      = freq ? freq.length : 0;
-    const minHz     = 20, maxHz = 18000;
-    const sr        = this.engine.sampleRate;
-    const fftSize   = this.engine.analyser ? this.engine.analyser.fftSize : FFT_SIZE;
+    const bins = freq ? freq.length : 0;
+    const minHz = 20, maxHz = 18000;
+    const sr = this.engine.sampleRate;
+    const fftSize = this.engine.analyser ? this.engine.analyser.fftSize : FFT_SIZE;
 
     const minBin = Math.max(1, Math.floor(minHz * fftSize / sr));   // ≥1 to avoid log(0)
     const maxBin = Math.min(Math.floor(maxHz * fftSize / sr), Math.max(bins - 1, 1));
@@ -632,23 +632,23 @@ class Visualizer {
     const targets = new Float32Array(this.barCount);
     for (let i = 0; i < this.barCount; i++) {
       // Logarithmic bin mapping — safe even when bins=0
-      const t   = this.barCount > 1 ? i / (this.barCount - 1) : 0;
+      const t = this.barCount > 1 ? i / (this.barCount - 1) : 0;
       const rawBin = minBin * Math.pow(maxBin / minBin, t);
       const bin = isFinite(rawBin) ? Math.floor(rawBin) : minBin;
       const val = (freq && bins > 0) ? freq[clamp(bin, 0, bins - 1)] / 255 : 0;
       targets[i] = val;
 
       const hz = binToHz(bin, sr, fftSize);
-      if (hz < 250)        { bassSum   += val; bassN++;   }
-      else if (hz < 4000)  { midsSum   += val; midsN++;   }
-      else                 { trebleSum += val; trebleN++; }
+      if (hz < 250) { bassSum += val; bassN++; }
+      else if (hz < 4000) { midsSum += val; midsN++; }
+      else { trebleSum += val; trebleN++; }
     }
 
-    const bassAvg   = bassN   ? bassSum   / bassN   : 0;
-    const midsAvg   = midsN   ? midsSum   / midsN   : 0;
+    const bassAvg = bassN ? bassSum / bassN : 0;
+    const midsAvg = midsN ? midsSum / midsN : 0;
     const trebleAvg = trebleN ? trebleSum / trebleN : 0;
 
-    this._bassAvg   = lerp(this._bassAvg,   bassAvg,   0.12);
+    this._bassAvg = lerp(this._bassAvg, bassAvg, 0.12);
     this._trebleAvg = lerp(this._trebleAvg, trebleAvg, 0.12);
 
     // Expose to UI
@@ -665,7 +665,7 @@ class Visualizer {
     if (isBeat) {
       this._beatFactor = 1.0;
       // Spawn central burst
-      this.spawnBurst(W/2, H/2);
+      this.spawnBurst(W / 2, H / 2);
     }
     this._beatFactor = lerp(this._beatFactor, 0, 0.1);
 
@@ -676,9 +676,9 @@ class Visualizer {
     if (this._beatFactor > 0.01) {
       const scale = 1.0 + this._beatFactor * 0.03;
       ctx.save();
-      ctx.translate(W/2, H/2);
+      ctx.translate(W / 2, H / 2);
       ctx.scale(scale, scale);
-      ctx.translate(-W/2, -H/2);
+      ctx.translate(-W / 2, -H / 2);
     }
 
     /* ── Include manual background if recording ── */
@@ -696,12 +696,12 @@ class Visualizer {
     const th = this._theme;
     const bloomR = this._bassAvg * 160;
     if (bloomR > 2) {
-      const [r1,g1,b1] = th.bloom1;
-      const [r2,g2,b2] = th.bloom2;
-      const grd = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.75);
-      grd.addColorStop(0,   `rgba(${r1},${g1},${b1},${this._bassAvg * 0.18})`);
+      const [r1, g1, b1] = th.bloom1;
+      const [r2, g2, b2] = th.bloom2;
+      const grd = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.75);
+      grd.addColorStop(0, `rgba(${r1},${g1},${b1},${this._bassAvg * 0.18})`);
       grd.addColorStop(0.5, `rgba(${r2},${g2},${b2},${this._bassAvg * 0.07})`);
-      grd.addColorStop(1,   'rgba(0,0,0,0)');
+      grd.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = grd;
       ctx.fillRect(0, 0, W, H);
     }
@@ -713,17 +713,17 @@ class Visualizer {
 
     /* ── Mode dispatch ── */
     const totalBars = this.barCount * 2;
-    const gap       = 2;
-    const barW      = Math.max(1, (W - gap * (totalBars - 1)) / totalBars);
-    const baseY     = H * 0.88;
-    const maxBarH   = H * 0.80;
+    const gap = 2;
+    const barW = Math.max(1, (W - gap * (totalBars - 1)) / totalBars);
+    const baseY = H * 0.88;
+    const maxBarH = H * 0.80;
     const glowFactor = clamp(this._rms * 10, 0, 1);
 
     switch (this._mode) {
-      case 'bars':     this._drawBars(W, H, ctx, barW, baseY, maxBarH, glowFactor); break;
-      case 'wave':     this._drawWaveform(W, H, ctx, glowFactor); break;
+      case 'bars': this._drawBars(W, H, ctx, barW, baseY, maxBarH, glowFactor); break;
+      case 'wave': this._drawWaveform(W, H, ctx, glowFactor); break;
       case 'circular': this._drawCircular(W, H, ctx, glowFactor); break;
-      case 'lissajous':this._drawLissajous(W, H, ctx, glowFactor); break;
+      case 'lissajous': this._drawLissajous(W, H, ctx, glowFactor); break;
       case 'perspective': this._drawPerspective(W, H, ctx, glowFactor); break;
       case 'oscilloscope': this._drawOscilloscope(W, H, ctx, glowFactor); break;
     }
@@ -743,30 +743,30 @@ class Visualizer {
 
   /* ─────────────────────────── MODE: BARS ─────────────────────────── */
   _drawBars(W, H, ctx, barW, baseY, maxBarH, glowFactor) {
-    const th  = this._theme;
+    const th = this._theme;
     const gap = 2;
     for (let i = 0; i < this.barCount; i++) {
-      const val  = this.smoothed[i];
+      const val = this.smoothed[i];
       const barH = val * maxBarH;
-      const leftIdx  = this.barCount - 1 - i;
+      const leftIdx = this.barCount - 1 - i;
       const rightIdx = this.barCount + i;
-      const xLeft  = leftIdx  * (barW + gap);
+      const xLeft = leftIdx * (barW + gap);
       const xRight = rightIdx * (barW + gap);
-      const y      = baseY - barH;
-      const hue       = remap(i, 0, this.barCount - 1, th.hueStart, th.hueEnd);
-      const sat       = th.sat;
-      const glowColor = `hsl(${hue},${Math.max(sat,20)}%,70%)`;
+      const y = baseY - barH;
+      const hue = remap(i, 0, this.barCount - 1, th.hueStart, th.hueEnd);
+      const sat = th.sat;
+      const glowColor = `hsl(${hue},${Math.max(sat, 20)}%,70%)`;
 
       if (barH > 0.5 && isFinite(y) && isFinite(xLeft) && isFinite(xRight)) {
         ctx.save();
-        ctx.shadowBlur  = 8 + glowFactor * 24 + val * 16;
+        ctx.shadowBlur = 8 + glowFactor * 24 + val * 16;
         ctx.shadowColor = glowColor;
         const grad = ctx.createLinearGradient(0, y, 0, baseY);
-        grad.addColorStop(0,   `hsl(${hue},${sat}%,${clamp(70 + val * 20, 0, 100)}%)`);
+        grad.addColorStop(0, `hsl(${hue},${sat}%,${clamp(70 + val * 20, 0, 100)}%)`);
         grad.addColorStop(0.4, `hsl(${hue},${sat}%,50%)`);
-        grad.addColorStop(1,   `hsl(${hue},${Math.floor(sat*0.8)}%,20%)`);
+        grad.addColorStop(1, `hsl(${hue},${Math.floor(sat * 0.8)}%,20%)`);
         const radius = Math.min(barW / 2, 4);
-        this._roundRect(ctx, xLeft,  y, barW, barH, radius);
+        this._roundRect(ctx, xLeft, y, barW, barH, radius);
         ctx.fillStyle = grad;
         ctx.fill();
         this._roundRect(ctx, xRight, y, barW, barH, radius);
@@ -779,23 +779,23 @@ class Visualizer {
         this.peaks[i] = barH; this.peakHold[i] = now; this.peakVels[i] = 0;
       } else if (now - this.peakHold[i] > PEAK_HOLD_MS) {
         this.peakVels[i] = Math.min(this.peakVels[i] + PEAK_GRAVITY, 18);
-        this.peaks[i]    = Math.max(0, this.peaks[i] - this.peakVels[i]);
+        this.peaks[i] = Math.max(0, this.peaks[i] - this.peakVels[i]);
       }
       const capY = baseY - this.peaks[i] - 3;
       if (this.peaks[i] > 2 && isFinite(capY)) {
         ctx.save();
         ctx.shadowBlur = 10 + glowFactor * 12;
         ctx.shadowColor = glowColor;
-        ctx.fillStyle  = `hsl(${hue},${sat}%,82%)`;
-        ctx.fillRect(xLeft,  capY, barW, 2);
+        ctx.fillStyle = `hsl(${hue},${sat}%,82%)`;
+        ctx.fillRect(xLeft, capY, barW, 2);
         ctx.fillRect(xRight, capY, barW, 2);
         ctx.restore();
       }
 
       if (this._trebleAvg > 0.35 && val > 0.72 && Math.random() < 0.12) {
-        const glowColor2 = `hsl(${remap(i, 0, this.barCount-1, th.hueStart, th.hueEnd)},${Math.max(th.sat,20)}%,70%)`;
+        const glowColor2 = `hsl(${remap(i, 0, this.barCount - 1, th.hueStart, th.hueEnd)},${Math.max(th.sat, 20)}%,70%)`;
         this.particles.push(new Particle(xRight + barW / 2, y, glowColor2));
-        this.particles.push(new Particle(xLeft  + barW / 2, y, glowColor2));
+        this.particles.push(new Particle(xLeft + barW / 2, y, glowColor2));
       }
     }
 
@@ -803,7 +803,7 @@ class Visualizer {
     ctx.save();
     ctx.globalAlpha = 0.12 + glowFactor * 0.08;
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth   = 1;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, baseY + 1); ctx.lineTo(W, baseY + 1);
     ctx.stroke();
@@ -815,18 +815,18 @@ class Visualizer {
     const td = this.engine.timeDomainData;
     if (!td || td.length === 0) return;
 
-    const th     = this._theme;
-    const [c0,c1,c2,c3] = th.wave;
+    const th = this._theme;
+    const [c0, c1, c2, c3] = th.wave;
 
-    const baseY  = H * 0.5;
+    const baseY = H * 0.5;
     const scaleY = H * 0.40;
-    const step   = W / (td.length - 1);
+    const step = W / (td.length - 1);
 
     // Horizontal center line
     ctx.save();
     ctx.globalAlpha = 0.08;
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth   = 1;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, baseY); ctx.lineTo(W, baseY);
     ctx.stroke();
@@ -834,20 +834,20 @@ class Visualizer {
 
     // Glow pass (wide, blurred)
     const hGrad = ctx.createLinearGradient(0, 0, W, 0);
-    hGrad.addColorStop(0,    c0);
+    hGrad.addColorStop(0, c0);
     hGrad.addColorStop(0.33, c1);
     hGrad.addColorStop(0.66, c2);
-    hGrad.addColorStop(1,    c3);
+    hGrad.addColorStop(1, c3);
 
     const drawLine = (alpha, blur, lineW) => {
       ctx.save();
-      ctx.globalAlpha  = alpha;
-      ctx.shadowBlur   = blur;
-      ctx.shadowColor  = `rgba(180,77,255,0.9)`;
-      ctx.lineWidth    = lineW;
-      ctx.lineCap      = 'round';
-      ctx.lineJoin     = 'round';
-      ctx.strokeStyle  = hGrad;
+      ctx.globalAlpha = alpha;
+      ctx.shadowBlur = blur;
+      ctx.shadowColor = `rgba(180,77,255,0.9)`;
+      ctx.lineWidth = lineW;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = hGrad;
       ctx.beginPath();
       for (let i = 0; i < td.length; i++) {
         const x = i * step;
@@ -859,15 +859,15 @@ class Visualizer {
     };
 
     drawLine(0.25 + glowFactor * 0.2, 18 + glowFactor * 20, 6);
-    drawLine(1.0,                      8 + glowFactor * 12,  2);
+    drawLine(1.0, 8 + glowFactor * 12, 2);
 
     // Soft mirror reflection below
     ctx.save();
     ctx.globalAlpha = 0.18;
-    ctx.shadowBlur  = 6;
+    ctx.shadowBlur = 6;
     ctx.shadowColor = '#7c3bff';
-    ctx.lineWidth   = 1.5;
-    ctx.lineJoin    = 'round';
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
     ctx.strokeStyle = hGrad;
     ctx.beginPath();
     const reflectY = H * 0.88;
@@ -882,26 +882,26 @@ class Visualizer {
 
   /* ─────────────────────────── MODE: CIRCULAR ─────────────────────── */
   _drawCircular(W, H, ctx, glowFactor) {
-    const th      = this._theme;
-    const cx      = W / 2;
-    const cy      = H * 0.48;
-    const minDim  = Math.min(W, H);
-    const innerR  = minDim * 0.16;
-    const maxLen  = minDim * 0.34;
-    const total   = this.barCount * 2;
+    const th = this._theme;
+    const cx = W / 2;
+    const cy = H * 0.48;
+    const minDim = Math.min(W, H);
+    const innerR = minDim * 0.16;
+    const maxLen = minDim * 0.34;
+    const total = this.barCount * 2;
 
     for (let i = 0; i < this.barCount; i++) {
-      const val    = this.smoothed[i];
+      const val = this.smoothed[i];
       const barLen = val * maxLen;
       if (barLen < 0.5) continue;
 
-      const hue       = remap(i, 0, this.barCount - 1, th.hueStart, th.hueEnd);
-      const sat       = th.sat;
-      const glowColor = `hsl(${hue},${Math.max(sat,20)}%,70%)`;
-      const lineW     = Math.max(1.5, 2.5 - (i / this.barCount) * 1.2);
+      const hue = remap(i, 0, this.barCount - 1, th.hueStart, th.hueEnd);
+      const sat = th.sat;
+      const glowColor = `hsl(${hue},${Math.max(sat, 20)}%,70%)`;
+      const lineW = Math.max(1.5, 2.5 - (i / this.barCount) * 1.2);
 
       for (let side = 0; side < 2; side++) {
-        const idx   = side === 0 ? i : (this.barCount * 2 - 1 - i);
+        const idx = side === 0 ? i : (this.barCount * 2 - 1 - i);
         const angle = (idx / total) * Math.PI * 2 - Math.PI / 2;
         const x1 = cx + Math.cos(angle) * innerR;
         const y1 = cy + Math.sin(angle) * innerR;
@@ -909,11 +909,11 @@ class Visualizer {
         const y2 = cy + Math.sin(angle) * (innerR + barLen);
 
         ctx.save();
-        ctx.shadowBlur  = 6 + glowFactor * 16 + val * 10;
+        ctx.shadowBlur = 6 + glowFactor * 16 + val * 10;
         ctx.shadowColor = glowColor;
         ctx.strokeStyle = `hsl(${hue},${sat}%,62%)`;
-        ctx.lineWidth   = lineW;
-        ctx.lineCap     = 'round';
+        ctx.lineWidth = lineW;
+        ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -924,19 +924,19 @@ class Visualizer {
 
     // Inner glowing core circle
     ctx.save();
-    const [r1,g1,b1] = th.bloom2;
+    const [r1, g1, b1] = th.bloom2;
     const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
-    coreGrad.addColorStop(0,   `rgba(${r1},${g1},${b1},${0.40 + glowFactor * 0.45})`);
+    coreGrad.addColorStop(0, `rgba(${r1},${g1},${b1},${0.40 + glowFactor * 0.45})`);
     coreGrad.addColorStop(0.6, `rgba(${r1},${g1},${b1},${0.12 + glowFactor * 0.15})`);
-    coreGrad.addColorStop(1,   `rgba(${r1},${g1},${b1},0.02)`);
+    coreGrad.addColorStop(1, `rgba(${r1},${g1},${b1},0.02)`);
     ctx.beginPath();
     ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
     ctx.fillStyle = coreGrad;
     ctx.fill();
-    ctx.shadowBlur  = 12 + glowFactor * 18;
+    ctx.shadowBlur = 12 + glowFactor * 18;
     ctx.shadowColor = th.core;
     ctx.strokeStyle = `rgba(${r1},${g1},${b1},${0.45 + glowFactor * 0.4})`;
-    ctx.lineWidth   = 1.5;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.restore();
   }
@@ -946,18 +946,18 @@ class Visualizer {
     const td = this.engine.timeDomainData;
     if (!td || td.length === 0) return;
 
-    const th     = this._theme;
-    const cx     = W / 2;
-    const cy     = H / 2;
-    const scale  = Math.min(W, H) * 0.42;
-    const len    = td.length;
+    const th = this._theme;
+    const cx = W / 2;
+    const cy = H / 2;
+    const scale = Math.min(W, H) * 0.42;
+    const len = td.length;
     const offset = Math.floor(len / 4);
 
     // Subtle crosshairs
     ctx.save();
     ctx.globalAlpha = 0.07;
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth   = 1;
+    ctx.lineWidth = 1;
     ctx.setLineDash([4, 8]);
     ctx.beginPath();
     ctx.moveTo(cx, H * 0.08); ctx.lineTo(cx, H * 0.92);
@@ -969,20 +969,20 @@ class Visualizer {
     // Plot phase-shifted XY pairs as glowing dots
     ctx.save();
     for (let i = 0; i < len - offset; i++) {
-      const x = cx + td[i]          * scale;
+      const x = cx + td[i] * scale;
       const y = cy + td[i + offset] * scale;
       if (!isFinite(x) || !isFinite(y)) continue;
 
-      const t     = i / len;
-      const hue   = th.hueStart + t * (th.hueEnd - th.hueStart);
-      const sat   = th.sat;
-      const amp   = Math.abs(td[i]) + Math.abs(td[i + offset]);
+      const t = i / len;
+      const hue = th.hueStart + t * (th.hueEnd - th.hueStart);
+      const sat = th.sat;
+      const amp = Math.abs(td[i]) + Math.abs(td[i + offset]);
       const alpha = clamp(0.3 + glowFactor * 0.5 + amp * 0.4, 0, 1);
-      const size  = 1.2 + amp * 1.4;
+      const size = 1.2 + amp * 1.4;
 
-      ctx.shadowBlur  = 4 + glowFactor * 8;
-      ctx.shadowColor = `hsl(${hue},${Math.max(sat,20)}%,70%)`;
-      ctx.fillStyle   = `hsla(${hue},${sat}%,72%,${alpha})`;
+      ctx.shadowBlur = 4 + glowFactor * 8;
+      ctx.shadowColor = `hsl(${hue},${Math.max(sat, 20)}%,70%)`;
+      ctx.fillStyle = `hsla(${hue},${sat}%,72%,${alpha})`;
       ctx.fillRect(x - size / 2, y - size / 2, size, size);
     }
     ctx.restore();
@@ -991,7 +991,7 @@ class Visualizer {
     ctx.save();
     ctx.globalAlpha = 0.06 + glowFactor * 0.05;
     ctx.strokeStyle = th.core;
-    ctx.lineWidth   = 1;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(cx, cy, scale, 0, Math.PI * 2);
     ctx.stroke();
@@ -1018,10 +1018,10 @@ class Visualizer {
       ctx.stroke();
     }
     for (let i = -5; i <= 5; i++) {
-        ctx.beginPath();
-        ctx.moveTo(cx + i * W * 0.2, H);
-        ctx.lineTo(cx, cy);
-        ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + i * W * 0.2, H);
+      ctx.lineTo(cx, cy);
+      ctx.stroke();
     }
     ctx.restore();
 
@@ -1031,25 +1031,25 @@ class Visualizer {
       const val = this.smoothed[i];
       const hue = remap(i, 0, numBars - 1, th.hueStart, th.hueEnd);
       const sat = th.sat;
-      
+
       // Mirror halves
       for (let side = -1; side <= 1; side += 2) {
         if (side === 0) continue;
-        
+
         const xOffset = (i / numBars) * W * 0.45 * side;
         const xBase = cx + xOffset;
         const z = 1.0; // depth (fixed for this "row", but could be varied)
-        
+
         // Simulating depth by scaling based on xOffset
         const scale = 1.0 - Math.abs(xOffset / cx) * 0.5;
         const barW = (W / numBars) * 1.2 * scale;
         const barH = val * H * 0.6 * scale;
-      
+
         const x = cx + xOffset;
         const y = H * 0.9 - (1.0 - scale) * H * 0.2;
-        
+
         if (barH > 0.5 && isFinite(x) && isFinite(y)) {
-          const glowColor = `hsl(${hue},${Math.max(sat,20)}%,70%)`;
+          const glowColor = `hsl(${hue},${Math.max(sat, 20)}%,70%)`;
           ctx.save();
           ctx.shadowBlur = (4 + glowFactor * 10) * scale;
           ctx.shadowColor = glowColor;
@@ -1062,13 +1062,13 @@ class Visualizer {
           // Draw a slanted "3D" bar (trapezoid)
           const topW = barW * 0.8;
           ctx.beginPath();
-          ctx.moveTo(x - barW/2, y);
-          ctx.lineTo(x + barW/2, y);
-          ctx.lineTo(cx + (xOffset + barW/2) * perspective, y - barH);
-          ctx.lineTo(cx + (xOffset - barW/2) * perspective, y - barH);
+          ctx.moveTo(x - barW / 2, y);
+          ctx.lineTo(x + barW / 2, y);
+          ctx.lineTo(cx + (xOffset + barW / 2) * perspective, y - barH);
+          ctx.lineTo(cx + (xOffset - barW / 2) * perspective, y - barH);
           ctx.closePath();
           ctx.fill();
-          
+
           ctx.restore();
         }
       }
@@ -1087,10 +1087,10 @@ class Visualizer {
     let triggerIdx = 0;
     const triggerThreshold = 0.01;
     for (let i = 1; i < td.length / 2; i++) {
-        if (td[i] > 0 && td[i-1] <= 0 && td[i] > triggerThreshold) {
-            triggerIdx = i;
-            break;
-        }
+      if (td[i] > 0 && td[i - 1] <= 0 && td[i] > triggerThreshold) {
+        triggerIdx = i;
+        break;
+      }
     }
 
     // Grid background
@@ -1099,10 +1099,10 @@ class Visualizer {
     ctx.lineWidth = 1;
     const gridSize = 40;
     for (let x = 0; x <= W; x += gridSize) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
     }
     for (let y = 0; y <= H; y += gridSize) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
     }
     // Main Axis
     ctx.strokeStyle = 'rgba(0, 255, 65, 0.2)';
@@ -1117,22 +1117,22 @@ class Visualizer {
     const scaleY = H * 0.45;
 
     const drawWave = (alpha, blur, width) => {
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.shadowBlur = blur;
-        ctx.shadowColor = phosphorGreen;
-        ctx.strokeStyle = phosphorGreen;
-        ctx.lineWidth = width;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        for (let i = 0; i < numPoints; i++) {
-            const x = i * step;
-            const y = cy + td[triggerIdx + i] * scaleY;
-            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.shadowBlur = blur;
+      ctx.shadowColor = phosphorGreen;
+      ctx.strokeStyle = phosphorGreen;
+      ctx.lineWidth = width;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (let i = 0; i < numPoints; i++) {
+        const x = i * step;
+        const y = cy + td[triggerIdx + i] * scaleY;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
     };
 
     // Layered glow for phosphor look
@@ -1142,8 +1142,8 @@ class Visualizer {
     // Scanline effect hint
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.05)';
-    for(let i=0; i<H; i+=4) {
-        ctx.fillRect(0, i, W, 1);
+    for (let i = 0; i < H; i += 4) {
+      ctx.fillRect(0, i, W, 1);
     }
     ctx.restore();
   }
@@ -1183,88 +1183,88 @@ class Visualizer {
 ───────────────────────────────────────────── */
 class UIController {
   constructor() {
-    this.engine     = new AudioEngine();
-    this.canvas     = document.getElementById('vizCanvas');
+    this.engine = new AudioEngine();
+    this.canvas = document.getElementById('vizCanvas');
     this.visualizer = new Visualizer(this.canvas, this.engine);
 
-    this._btnPlay   = document.getElementById('btnPlay');
-    this._btnStop   = document.getElementById('btnStop');
+    this._btnPlay = document.getElementById('btnPlay');
+    this._btnStop = document.getElementById('btnStop');
     this._volumeSlider = document.getElementById('volumeSlider');
     this._fileInput = document.getElementById('fileInput');
     this._uploadZone = document.getElementById('uploadZone');
-    this._idleMsg   = document.getElementById('idleMsg');
-    this._playIcon  = document.getElementById('playIcon');
+    this._idleMsg = document.getElementById('idleMsg');
+    this._playIcon = document.getElementById('playIcon');
 
-    this._fillBass   = document.getElementById('fillBass');
-    this._fillMids   = document.getElementById('fillMids');
+    this._fillBass = document.getElementById('fillBass');
+    this._fillMids = document.getElementById('fillMids');
     this._fillTreble = document.getElementById('fillTreble');
-    this._rmsFill    = document.getElementById('rmsFill');
-    this._rmsValue   = document.getElementById('rmsValue');
+    this._rmsFill = document.getElementById('rmsFill');
+    this._rmsValue = document.getElementById('rmsValue');
 
-    this._wrapper    = document.getElementById('visualizer-wrapper');
-    this._demoBtns   = document.querySelectorAll('.btn-demo');
-    this._modeBtns   = document.querySelectorAll('.btn-mode');
-    this._themeDots  = document.querySelectorAll('.theme-dot');
+    this._wrapper = document.getElementById('visualizer-wrapper');
+    this._demoBtns = document.querySelectorAll('.btn-demo');
+    this._modeBtns = document.querySelectorAll('.btn-mode');
+    this._themeDots = document.querySelectorAll('.theme-dot');
 
     // Background Video
-    this._bgVideo         = document.getElementById('bgVideo');
-    this._bgVideoInput    = document.getElementById('bgVideoInput');
+    this._bgVideo = document.getElementById('bgVideo');
+    this._bgVideoInput = document.getElementById('bgVideoInput');
     this._bgVideoControls = document.getElementById('bgVideoControls');
-    this._bgVideoOpacity  = document.getElementById('bgVideoOpacity');
-    this._bgVideoRemove   = document.getElementById('bgVideoRemove');
-    this._bgVideoURL      = null;
+    this._bgVideoOpacity = document.getElementById('bgVideoOpacity');
+    this._bgVideoRemove = document.getElementById('bgVideoRemove');
+    this._bgVideoURL = null;
 
     // Equalizer
-    this._eqSliders  = document.querySelectorAll('.eq-slider');
+    this._eqSliders = document.querySelectorAll('.eq-slider');
     this._btnResetEQ = document.getElementById('btnResetEQ');
 
     // Mic
     this._btnMic = document.getElementById('btnMic');
 
     // Help
-    this._helpSection  = document.querySelector('.help-section');
-    this._btnHelp      = document.getElementById('btnHelp');
+    this._helpSection = document.querySelector('.help-section');
+    this._btnHelp = document.getElementById('btnHelp');
     this._btnCloseHelp = document.getElementById('btnCloseHelp');
 
     // Fullscreen, Capture & Record
-    this._btnFs        = document.getElementById('btnFs');
-    this._btnCapture   = document.getElementById('btnCapture');
-    this._btnRecord    = document.getElementById('btnRecord');
+    this._btnFs = document.getElementById('btnFs');
+    this._btnCapture = document.getElementById('btnCapture');
+    this._btnRecord = document.getElementById('btnRecord');
     this._recordingStatus = document.getElementById('recordingStatus');
-    this._recTimer     = document.getElementById('recTimer');
-    this._fsTimer      = null;
+    this._recTimer = document.getElementById('recTimer');
+    this._fsTimer = null;
 
     // Recording state
-    this._isRecording  = false;
+    this._isRecording = false;
     this._mediaRecorder = null;
     this._recordedChunks = [];
     this._recordStartTime = 0;
     this._recordInterval = null;
 
     // Seek Bar
-    this._seekBar     = document.getElementById('seekBar');
-    this._seekFill    = document.getElementById('seekFill');
+    this._seekBar = document.getElementById('seekBar');
+    this._seekFill = document.getElementById('seekFill');
     this._timeCurrent = document.getElementById('timeCurrent');
-    this._timeTotal   = document.getElementById('timeTotal');
+    this._timeTotal = document.getElementById('timeTotal');
     this._isScrubbing = false;
 
-    this._ready      = false; // true once a source is loaded
-    this._isPlaying  = false;
+    this._ready = false; // true once a source is loaded
+    this._isPlaying = false;
     this._activeDemo = null;
 
     // Song Title
-    this._songTitle     = document.getElementById('songTitle');
+    this._songTitle = document.getElementById('songTitle');
     this._songTitleText = document.getElementById('songTitleText');
 
     // Playlist UI
-    this._btnPrev       = document.getElementById('btnPrev');
-    this._btnNext       = document.getElementById('btnNext');
+    this._btnPrev = document.getElementById('btnPrev');
+    this._btnNext = document.getElementById('btnNext');
     this._playlistPanel = document.getElementById('playlistPanel');
     this._btnPlaylistToggle = document.getElementById('btnPlaylistToggle');
-    this._playlistList  = document.getElementById('playlistList');
+    this._playlistList = document.getElementById('playlistList');
 
     // Playlist State
-    this._playlist      = [];
+    this._playlist = [];
     this._playlistIndex = -1;
 
     this._bindEvents();
@@ -1321,7 +1321,7 @@ class UIController {
     this._volumeSlider.addEventListener('input', e => {
       this.engine.setVolume(parseFloat(e.target.value));
     });
-    
+
     this._reverbSlider = document.getElementById('reverbSlider');
     if (this._reverbSlider) {
       this._reverbSlider.addEventListener('input', e => {
@@ -1368,7 +1368,7 @@ class UIController {
         const mode = btn.dataset.freq;
         this._clearDemoBtns();
         this._onMicStop(); // Disable mic if active
-        
+
         // Clear playlist
         this._playlist = [];
         this._playlistIndex = -1;
@@ -1377,7 +1377,7 @@ class UIController {
         btn.classList.add('active');
         this._activeDemo = mode;
         this._ready = true;
-        
+
         // Update Song Title
         const demoTitles = {
           'bass': 'Demo — Harmonic Thump (Bass)',
@@ -1484,10 +1484,10 @@ class UIController {
     try {
       this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       this.micNode = this.ctx.createMediaStreamSource(this.micStream);
-      
+
       // Connect to start of EQ chain
       this.micNode.connect(this.filters[0]);
-      
+
       this.isPlaying = true; // For Visualizer loop
       return true;
     } catch (err) {
@@ -1577,8 +1577,8 @@ class UIController {
       this._clearDemoBtns();
       this._activeDemo = null;
       this._ready = true;
-      this._btnPlay.disabled  = false;
-      this._btnStop.disabled  = false;
+      this._btnPlay.disabled = false;
+      this._btnStop.disabled = false;
       const name = file.name.replace(/\.[^/.]+$/, '');
       this._updateUploadLabel('♬ ' + name.slice(0, 28));
       this._updateSongTitle(name);
@@ -1629,8 +1629,8 @@ class UIController {
     this._hideSongTitle();
     this._clearDemoBtns();
     this._activeDemo = null;
-    this._isPlaying  = false;
-    this._ready      = false;
+    this._isPlaying = false;
+    this._ready = false;
     this._btnPlay.disabled = true;
     this._btnStop.disabled = true;
     this._playIcon.textContent = '▶';
@@ -1694,8 +1694,8 @@ class UIController {
 
   /* Band meter + RMS updates (called from Visualizer._frame) */
   updateBands(bass, mids, treble) {
-    this._fillBass.style.width   = (bass   * 100).toFixed(1) + '%';
-    this._fillMids.style.width   = (mids   * 100).toFixed(1) + '%';
+    this._fillBass.style.width = (bass * 100).toFixed(1) + '%';
+    this._fillMids.style.width = (mids * 100).toFixed(1) + '%';
     this._fillTreble.style.width = (treble * 100).toFixed(1) + '%';
 
     // Wrapper bloom glow from bass
@@ -1711,7 +1711,7 @@ class UIController {
   }
 
   updateRMS(rms) {
-    const db  = rms > 0 ? 20 * Math.log10(rms) : -80;
+    const db = rms > 0 ? 20 * Math.log10(rms) : -80;
     const pct = clamp(remap(db, -60, 0, 0, 100), 0, 100);
     this._rmsFill.style.width = pct.toFixed(1) + '%';
     this._rmsValue.textContent = isFinite(db) ? db.toFixed(1) + ' dB' : '−∞ dB';
@@ -1732,13 +1732,13 @@ class UIController {
     const cy = H * 0.88;           // burst from the baseline — feels like the drop "hits" the ground
     const count = 80;
     for (let i = 0; i < count; i++) {
-      const angle  = (i / count) * Math.PI * 2;
-      const speed  = 3 + Math.random() * 7;
-      const p      = new Particle(cx, cy, drop.color.glow);
+      const angle = (i / count) * Math.PI * 2;
+      const speed = 3 + Math.random() * 7;
+      const p = new Particle(cx, cy, drop.color.glow);
       p.vx = Math.cos(angle) * speed;
       p.vy = Math.sin(angle) * speed - 4;  // bias upward
-      p.life   = 1.0;
-      p.decay  = 0.012 + Math.random() * 0.018;
+      p.life = 1.0;
+      p.decay = 0.012 + Math.random() * 0.018;
       p.radius = 1.5 + Math.random() * 3.5;
       viz.particles.push(p);
     }
@@ -1752,8 +1752,8 @@ class UIController {
       );
       p.vx = (Math.random() - 0.5) * 5;
       p.vy = -(4 + Math.random() * 9);
-      p.life   = 1.0;
-      p.decay  = 0.015 + Math.random() * 0.02;
+      p.life = 1.0;
+      p.decay = 0.015 + Math.random() * 0.02;
       p.radius = 1 + Math.random() * 2.5;
       viz.particles.push(p);
     }
@@ -1766,25 +1766,25 @@ class UIController {
   /* Idle animation — subtle waving bars even before audio */
   _startIdleLoop() {
     const canvas = this.canvas;
-    const ctx    = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     let t = 0;
     const idle = () => {
       if (this._isPlaying) { requestAnimationFrame(idle); return; }
       const W = this.visualizer.W, H = this.visualizer.H;
       ctx.clearRect(0, 0, W, H);
-      const bars   = 60;
-      const barW   = (W - bars * 2) / bars;
-      const baseY  = H * 0.88;
-      const maxBH  = H * 0.06;
+      const bars = 60;
+      const barW = (W - bars * 2) / bars;
+      const baseY = H * 0.88;
+      const maxBH = H * 0.06;
       t += 0.025;
       for (let i = 0; i < bars; i++) {
-        const val  = Math.sin(t + i * 0.18) * 0.5 + 0.5;
-        const bh   = val * maxBH;
-        const hue  = remap(i, 0, bars - 1, 330, 180);
-        const x    = i * (barW + 2);
+        const val = Math.sin(t + i * 0.18) * 0.5 + 0.5;
+        const bh = val * maxBH;
+        const hue = remap(i, 0, bars - 1, 330, 180);
+        const x = i * (barW + 2);
         ctx.save();
         ctx.globalAlpha = 0.28;
-        ctx.fillStyle   = `hsl(${hue},80%,60%)`;
+        ctx.fillStyle = `hsl(${hue},80%,60%)`;
         ctx.fillRect(x, baseY - bh, barW, bh);
         ctx.restore();
       }
@@ -1796,7 +1796,7 @@ class UIController {
   /* ── Microphone methods ── */
   async _toggleMic() {
     const isActive = this._btnMic.classList.contains('active');
-    
+
     if (isActive) {
       this._onMicStop();
       this.engine.stopMic();
@@ -1817,18 +1817,18 @@ class UIController {
     this._renderPlaylist();
     this._isPlaying = true;
     this._btnMic.classList.add('active');
-    
+
     // Disable file-playback controls
     this._btnPlay.disabled = true;
     this._playIcon.textContent = '▶';
     this._updateUploadLabel('● LIVE MICROPHONE');
     this._uploadZone.style.pointerEvents = 'none';
     this._uploadZone.style.opacity = '0.5';
-    
+
     // Hide seek bar (not used for mic)
     document.querySelector('.seek-container').style.opacity = '0.3';
     document.querySelector('.seek-container').style.pointerEvents = 'none';
-    
+
     this.visualizer.start();
     this._updateSongTitle('Live — Microphone Input');
   }
@@ -1836,14 +1836,14 @@ class UIController {
   _onMicStop() {
     this._isPlaying = false;
     this._btnMic.classList.remove('active');
-    
+
     // Enable file-playback controls
     this._btnPlay.disabled = !this._ready;
     this._uploadZone.style.pointerEvents = 'auto';
     this._uploadZone.style.opacity = '1';
     if (!this._ready) this._updateUploadLabel('Upload MP3');
     else this._updateUploadLabel('♬ ' + this._currentFileName);
-    
+
     // Restore seek bar
     document.querySelector('.seek-container').style.opacity = '1';
     document.querySelector('.seek-container').style.pointerEvents = 'auto';
@@ -1957,26 +1957,26 @@ class UIController {
 
   _startRecording() {
     if (!this.engine.ctx || !this.engine.streamDestination) return;
-    
+
     // Capture 60FPS video stream from canvas
     const videoStream = this.canvas.captureStream(60);
     const audioStream = this.engine.streamDestination.stream;
-    
+
     // Combine streams
     const combinedStream = new MediaStream([...videoStream.getTracks(), ...audioStream.getTracks()]);
-    
+
     this._recordedChunks = [];
     try {
       this._mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm; codecs=vp9,opus' });
-    } catch(e) {
+    } catch (e) {
       // Fallback
       this._mediaRecorder = new MediaRecorder(combinedStream);
     }
-    
+
     this._mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) this._recordedChunks.push(e.data);
     };
-    
+
     this._mediaRecorder.onstop = () => {
       const blob = new Blob(this._recordedChunks, { type: 'video/webm' });
       const url = URL.createObjectURL(blob);
@@ -1992,7 +1992,7 @@ class UIController {
     this._mediaRecorder.start();
     this._isRecording = true;
     this.visualizer._isRecording = true; // Tell Visualizer to render background overlay
-    
+
     // UI Feedback
     if (this._btnRecord) this._btnRecord.classList.add('recording');
     if (this._recordingStatus) this._recordingStatus.hidden = false;
@@ -2007,7 +2007,7 @@ class UIController {
     }
     this._isRecording = false;
     this.visualizer._isRecording = false;
-    
+
     // UI Feedback
     if (this._btnRecord) this._btnRecord.classList.remove('recording');
     if (this._recordingStatus) this._recordingStatus.hidden = true;
@@ -2054,6 +2054,93 @@ class UIController {
     document.body.removeChild(a);
   }
 
+  /* ── Interactive Guided Tour ── */
+  _startTour() {
+    // Close help overlay if open
+    this._helpSection.classList.remove('active');
+
+    const driverObj = window.driver.js.driver({
+      showProgress: true,
+      animate: true,
+      overlayColor: 'rgba(0,0,0,0.72)',
+      stagePadding: 6,
+      stageRadius: 12,
+      popoverOffset: 14,
+      nextBtnText: 'Next →',
+      prevBtnText: '← Back',
+      doneBtnText: 'Let\'s Go! 🚀',
+      onDestroyed: () => {
+        localStorage.setItem('soniq_tour_seen', 'true');
+      },
+      steps: [
+        {
+          popover: {
+            title: '◈ Welcome to SONIQ',
+            description: 'A high-end reactive audio visualizer packed with features. Let me show you around in 30 seconds!',
+          }
+        },
+        {
+          element: '#uploadZone',
+          popover: {
+            title: '⬆ Upload Your Music',
+            description: 'Drag & drop or click here to upload one or multiple MP3 files. Multiple files create an auto-playing playlist!',
+            side: 'bottom',
+          }
+        },
+        {
+          element: '#btnPlaylistToggle',
+          popover: {
+            title: '☰ Playlist Sidebar',
+            description: 'Toggle the playlist panel to see all loaded tracks, switch between them, or let them auto-advance.',
+            side: 'left',
+          }
+        },
+        {
+          element: '#modeSwitcher',
+          popover: {
+            title: '🎨 Visualization Modes',
+            description: 'Switch between 6 unique visual styles: Bars, Wave, Radial, Lissajous, 3D Perspective, and Oscilloscope.',
+            side: 'bottom',
+          }
+        },
+        {
+          element: '#themePicker',
+          popover: {
+            title: '🎨 Color Themes',
+            description: 'Pick from 5 curated color palettes — Neon, Sunset, Matrix, Ocean, and Monochrome — to change the entire visual mood.',
+            side: 'top',
+          }
+        },
+        {
+          element: '#eqPanel',
+          popover: {
+            title: '🎛 8-Band Equalizer',
+            description: 'Shape the audio frequencies in real-time with 8 precision EQ sliders. Hit Reset to flatten them back.',
+            side: 'top',
+          }
+        },
+        {
+          element: '#reverbSlider',
+          popover: {
+            title: '🌊 Reverb Effect',
+            description: 'Add lush, spatial depth to any track. Drag the slider to blend between dry and reverberated audio.',
+            side: 'bottom',
+          }
+        },
+        {
+          element: '#btnFs',
+          popover: {
+            title: '⛶ Fullscreen, Capture & Record',
+            description: 'Go fullscreen for an immersive experience, take a screenshot of the visualization, or record a video with synced audio!',
+            side: 'bottom',
+          }
+        },
+      ]
+    });
+
+    driverObj.drive();
+  }
+
   /* ── Fullscreen ── */
   _toggleFullscreen() {
     if (!document.fullscreenElement) {
@@ -2088,4 +2175,15 @@ class UIController {
 let ui;
 document.addEventListener('DOMContentLoaded', () => {
   ui = new UIController();
+
+  // Bind Take a Tour button
+  const btnTour = document.getElementById('btnTour');
+  if (btnTour) {
+    btnTour.addEventListener('click', () => ui._startTour());
+  }
+
+  // Auto-start tour on first visit
+  if (!localStorage.getItem('soniq_tour_seen') && window.driver) {
+    setTimeout(() => ui._startTour(), 800);
+  }
 });

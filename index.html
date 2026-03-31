@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sound Bar — Neon Visualizer</title>
-  <meta name="description" content="A high-end reactive audio visualizer with neon glassmorphism, frequency splitting, peak metering and particle effects." />
+  <meta name="description"
+    content="A high-end reactive audio visualizer with neon glassmorphism, frequency splitting, peak metering and particle effects." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css" />
 </head>
+
 <body>
 
   <!-- Ambient background blobs -->
@@ -40,8 +44,8 @@
       </div>
       <!-- BG video controls (shown only when video loaded) -->
       <div class="bg-video-controls" id="bgVideoControls" hidden>
-        <input type="range" id="bgVideoOpacity" min="5" max="75" value="32"
-               aria-label="Background video opacity" title="Video brightness" />
+        <input type="range" id="bgVideoOpacity" min="5" max="75" value="32" aria-label="Background video opacity"
+          title="Video brightness" />
         <button id="bgVideoRemove" aria-label="Remove background video">✕ Remove BG</button>
       </div>
 
@@ -65,12 +69,12 @@
     <!-- Mode switcher header -->
     <header class="top-bar">
       <div class="mode-switcher" id="modeSwitcher" role="tablist" aria-label="Visualizer mode">
-        <button class="btn-mode active" data-mode="bars"      role="tab" aria-selected="true">⬛ Bars</button>
-        <button class="btn-mode"        data-mode="wave"      role="tab" aria-selected="false">〰 Wave</button>
-        <button class="btn-mode"        data-mode="circular"  role="tab" aria-selected="false">◎ Radial</button>
-        <button class="btn-mode"        data-mode="lissajous" role="tab" aria-selected="false">∞ Lissajous</button>
-        <button class="btn-mode"        data-mode="perspective" role="tab" aria-selected="false">📐 3D Perspective</button>
-        <button class="btn-mode"        data-mode="oscilloscope" role="tab" aria-selected="false">📟 Oscilloscope</button>
+        <button class="btn-mode active" data-mode="bars" role="tab" aria-selected="true">⬛ Bars</button>
+        <button class="btn-mode" data-mode="wave" role="tab" aria-selected="false">〰 Wave</button>
+        <button class="btn-mode" data-mode="circular" role="tab" aria-selected="false">◎ Radial</button>
+        <button class="btn-mode" data-mode="lissajous" role="tab" aria-selected="false">∞ Lissajous</button>
+        <button class="btn-mode" data-mode="perspective" role="tab" aria-selected="false">📐 3D Perspective</button>
+        <button class="btn-mode" data-mode="oscilloscope" role="tab" aria-selected="false">📟 Oscilloscope</button>
       </div>
       <button class="btn-fs" id="btnFs" title="Toggle Fullscreen (F)" aria-label="Toggle Fullscreen">
         <span class="fs-icon">⛶</span>
@@ -92,15 +96,21 @@
     <!-- Band meters -->
     <div class="band-meters" id="bandMeters" aria-label="Frequency band meters">
       <div class="band" id="bandBass">
-        <div class="band-bar-bg"><div class="band-fill bass-fill" id="fillBass"></div></div>
+        <div class="band-bar-bg">
+          <div class="band-fill bass-fill" id="fillBass"></div>
+        </div>
         <span class="band-label">BASS</span>
       </div>
       <div class="band" id="bandMids">
-        <div class="band-bar-bg"><div class="band-fill mids-fill" id="fillMids"></div></div>
+        <div class="band-bar-bg">
+          <div class="band-fill mids-fill" id="fillMids"></div>
+        </div>
         <span class="band-label">MIDS</span>
       </div>
       <div class="band" id="bandTreble">
-        <div class="band-bar-bg"><div class="band-fill treble-fill" id="fillTreble"></div></div>
+        <div class="band-bar-bg">
+          <div class="band-fill treble-fill" id="fillTreble"></div>
+        </div>
         <span class="band-label">TREBLE</span>
       </div>
     </div>
@@ -109,14 +119,16 @@
     <section class="controls" aria-label="Playback controls">
 
       <!-- Upload zone -->
-      <label class="upload-zone" id="uploadZone" for="fileInput" tabindex="0" role="button" aria-label="Upload MP3 file(s)">
+      <label class="upload-zone" id="uploadZone" for="fileInput" tabindex="0" role="button"
+        aria-label="Upload MP3 file(s)">
         <input type="file" id="fileInput" accept="audio/*" multiple hidden />
         <span class="upload-icon">⬆</span>
         <span class="upload-text">Upload MP3</span>
       </label>
 
       <!-- BG Video upload -->
-      <label class="upload-zone upload-zone-sm" id="bgVideoZone" for="bgVideoInput" tabindex="0" role="button" aria-label="Set background video">
+      <label class="upload-zone upload-zone-sm" id="bgVideoZone" for="bgVideoInput" tabindex="0" role="button"
+        aria-label="Set background video">
         <input type="file" id="bgVideoInput" accept="video/*" hidden />
         <span class="upload-icon">🎬</span>
         <span class="upload-text">BG Video</span>
@@ -173,11 +185,16 @@
     <div class="theme-picker" id="themePicker" aria-label="Color theme">
       <span class="theme-label">Theme</span>
       <div class="theme-dots">
-        <button class="theme-dot active" data-theme="neon"   title="Neon"        aria-label="Neon theme"   style="background:linear-gradient(135deg,#ff2d6b,#b44dff,#00e5ff)"></button>
-        <button class="theme-dot"        data-theme="sunset" title="Sunset"      aria-label="Sunset theme" style="background:linear-gradient(135deg,#ff3300,#ff8800,#ffcc00)"></button>
-        <button class="theme-dot"        data-theme="matrix" title="Matrix"      aria-label="Matrix theme" style="background:linear-gradient(135deg,#003300,#00cc33,#39ff14)"></button>
-        <button class="theme-dot"        data-theme="ocean"  title="Ocean"       aria-label="Ocean theme"  style="background:linear-gradient(135deg,#00bcd4,#2979ff,#7c4dff)"></button>
-        <button class="theme-dot"        data-theme="mono"   title="Monochrome"  aria-label="Mono theme"   style="background:linear-gradient(135deg,#444,#999,#eee)"></button>
+        <button class="theme-dot active" data-theme="neon" title="Neon" aria-label="Neon theme"
+          style="background:linear-gradient(135deg,#ff2d6b,#b44dff,#00e5ff)"></button>
+        <button class="theme-dot" data-theme="sunset" title="Sunset" aria-label="Sunset theme"
+          style="background:linear-gradient(135deg,#ff3300,#ff8800,#ffcc00)"></button>
+        <button class="theme-dot" data-theme="matrix" title="Matrix" aria-label="Matrix theme"
+          style="background:linear-gradient(135deg,#003300,#00cc33,#39ff14)"></button>
+        <button class="theme-dot" data-theme="ocean" title="Ocean" aria-label="Ocean theme"
+          style="background:linear-gradient(135deg,#00bcd4,#2979ff,#7c4dff)"></button>
+        <button class="theme-dot" data-theme="mono" title="Monochrome" aria-label="Mono theme"
+          style="background:linear-gradient(135deg,#444,#999,#eee)"></button>
       </div>
     </div>
 
@@ -254,6 +271,7 @@
             <li><kbd>T</kbd> <span>Cycle Theme</span></li>
             <li><kbd>↑ / ↓</kbd> <span>Volume</span></li>
           </ul>
+          <button class="btn-tour" id="btnTour">🚀 Take a Tour</button>
         </div>
       </div>
     </div>
@@ -278,6 +296,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>
