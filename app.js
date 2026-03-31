@@ -1474,6 +1474,16 @@ class UIController {
       const y = e.clientY - rect.top;
       this.visualizer.spawnBurst(x, y);
     });
+
+    /* Touch-to-spawn particles (mobile) */
+    this.canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const rect = this.canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      this.visualizer.spawnBurst(x, y);
+    }, { passive: false });
   }
 
   /* ── Microphone ── */

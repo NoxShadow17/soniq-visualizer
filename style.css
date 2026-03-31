@@ -1459,3 +1459,388 @@ kbd {
   box-shadow: 0 0 18px var(--mids-glow);
   transform: translateY(-2px);
 }
+
+/* ══════════════════════════════════════════════
+   ACCESSIBILITY & CROSS-DEVICE SUPPORT
+   ══════════════════════════════════════════════ */
+
+/* ── Global focus-visible for keyboard navigation ── */
+*:focus-visible {
+  outline: 2px solid var(--treble);
+  outline-offset: 3px;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--treble);
+  outline-offset: 3px;
+}
+
+/* ── Skip-to-content (screen readers) ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--mids);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  z-index: 9999;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+/* ── Prefers Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .blob {
+    animation: none !important;
+    opacity: 0.1;
+  }
+
+  .idle-icon {
+    animation: none !important;
+  }
+
+  .btn-mic.active {
+    animation: none !important;
+  }
+
+  .rec-dot {
+    animation: none !important;
+  }
+
+  .song-title {
+    animation: none !important;
+  }
+}
+
+/* ── Tablet Breakpoint (≤ 768px) ── */
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 18px 14px 14px;
+    gap: 12px;
+  }
+
+  /* Mode switcher → horizontal scroll */
+  .mode-switcher {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+  }
+
+  .mode-switcher::-webkit-scrollbar {
+    display: none;
+  }
+
+  .btn-mode {
+    flex: 0 0 auto;
+    padding: 7px 10px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  /* Top bar */
+  .top-bar {
+    gap: 6px;
+  }
+
+  /* Controls → wrap tighter */
+  .controls {
+    gap: 8px;
+  }
+
+  /* EQ panel slightly shorter */
+  .eq-grid {
+    height: 100px;
+  }
+
+  /* Playlist panel → wider */
+  .playlist-panel {
+    width: 280px;
+  }
+
+  /* Song title */
+  .song-title {
+    bottom: 12px;
+    left: 12px;
+    padding: 8px 14px;
+    gap: 8px;
+  }
+
+  .song-text {
+    font-size: 0.78rem;
+    max-width: 200px;
+  }
+
+  /* Visualizer wrapper */
+  .visualizer-wrapper {
+    min-height: 220px;
+  }
+}
+
+/* ── Phone Breakpoint (≤ 480px) ── */
+@media (max-width: 480px) {
+  .app-shell {
+    padding: 12px 8px 10px;
+    gap: 10px;
+  }
+
+  /* Header compact */
+  .header {
+    gap: 2px;
+  }
+
+  .logo {
+    font-size: 1.2rem;
+    gap: 6px;
+  }
+
+  .logo-icon {
+    font-size: 1.2rem;
+  }
+
+  .tagline {
+    font-size: 0.62rem;
+  }
+
+  /* Visualizer wrapper */
+  .visualizer-wrapper {
+    min-height: 180px;
+    border-radius: 12px;
+  }
+
+  /* Seek bar */
+  .seek-container {
+    gap: 6px;
+    padding: 0 2px;
+  }
+
+  .time-label {
+    font-size: 0.58rem;
+    min-width: 28px;
+  }
+
+  /* Mode buttons — smaller & scrollable */
+  .btn-mode {
+    padding: 6px 8px;
+    font-size: 0.6rem;
+  }
+
+  /* Controls */
+  .controls {
+    gap: 6px;
+    justify-content: center;
+  }
+
+  /* Play button — slightly smaller */
+  .btn-play {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .btn-stop {
+    width: 36px;
+    height: 36px;
+    font-size: 0.75rem;
+  }
+
+  .btn-prev,
+  .btn-next {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* Upload zones compact */
+  .upload-zone {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .upload-zone-sm {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+  }
+
+  /* Volume/Effect controls */
+  .volume-control,
+  .effect-control {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  #volumeSlider,
+  #reverbSlider {
+    width: 60px;
+  }
+
+  /* Demo panel → stacked */
+  .demo-panel {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .demo-buttons {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .btn-demo,
+  .btn-mic {
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+  }
+
+  /* Equalizer compact */
+  .eq-grid {
+    height: 85px;
+  }
+
+  .eq-freq {
+    font-size: 0.48rem;
+  }
+
+  /* Theme picker */
+  .theme-picker {
+    gap: 6px;
+  }
+
+  .theme-dot {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Band meters */
+  .band-meters {
+    gap: 8px;
+  }
+
+  .band-label {
+    font-size: 0.55rem;
+  }
+
+  /* RMS row */
+  .rms-label {
+    font-size: 0.55rem;
+    width: 22px;
+  }
+
+  .rms-value {
+    font-size: 0.6rem;
+    width: 40px;
+  }
+
+  /* Fullscreen/Capture/Record buttons */
+  .btn-fs {
+    width: 34px;
+    height: 34px;
+  }
+
+  .fs-icon {
+    font-size: 0.8rem;
+  }
+
+  /* Playlist full-width overlay on mobile */
+  .playlist-panel {
+    width: 100%;
+    right: 0;
+    border-radius: 0;
+    max-height: 50vh;
+  }
+
+  /* Song title compact */
+  .song-title {
+    bottom: 8px;
+    left: 8px;
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .song-text {
+    font-size: 0.7rem;
+    max-width: 160px;
+  }
+
+  .music-icon {
+    font-size: 0.9rem;
+  }
+
+  /* Help section */
+  .help-card {
+    max-width: 90vw;
+    padding: 16px;
+  }
+
+  .help-list li {
+    padding: 6px 0;
+    font-size: 0.72rem;
+  }
+
+  /* Footer */
+  .footer {
+    font-size: 0.58rem;
+  }
+
+  /* Hide BG video upload on very small screens */
+  .upload-zone-sm {
+    display: none;
+  }
+}
+
+/* ── Ensure minimum touch target size (44px) ── */
+@media (pointer: coarse) {
+
+  button,
+  [role="button"],
+  .btn-mode,
+  .btn-demo,
+  .btn-mic,
+  .theme-dot {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .theme-dot {
+    width: 36px;
+    height: 36px;
+  }
+
+  #seekBar {
+    height: 20px;
+  }
+
+  .seek-bar-wrapper {
+    height: 10px;
+  }
+}
